@@ -9,6 +9,6 @@ assignees: ''
 
 - task ID:
 - purpose:
-- success conditions:
-- constraints:
-- evidence:
+- success criteria:
+- scope / constraints:
+- references (optional):
