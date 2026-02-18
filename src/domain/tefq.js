@@ -26,11 +26,11 @@ function dueScore(dueDate, nowMs) {
 
   const diffMs = dueMs - nowMs;
 
-  if (diffMs <= 24 * 60 * 60 * 1000) {
+  if (diffMs >= 0 && diffMs <= 24 * 60 * 60 * 1000) {
     return { score: 2, reason: 'due within 24h' };
   }
 
-  if (diffMs <= 3 * 24 * 60 * 60 * 1000) {
+  if (diffMs > 24 * 60 * 60 * 1000 && diffMs <= 3 * 24 * 60 * 60 * 1000) {
     return { score: 1, reason: 'due within 3 days' };
   }
 
