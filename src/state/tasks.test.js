@@ -56,10 +56,18 @@ describe('task actions and reducer', () => {
 
     const editedState = tasksReducer(
       createdState,
-      editTaskAction({ id: 't1', title: 'Write full outline', now: '2026-02-19T01:05:00.000Z' })
+      editTaskAction({
+        id: 't1',
+        title: 'Write full outline',
+        description: 'Draft all beats',
+        now: '2026-02-19T01:05:00.000Z'
+      })
     );
-    expect(editedState.tasks[0].title).toBe('Write full outline');
-    expect(editedState.tasks[0].updatedAt).toBe('2026-02-19T01:05:00.000Z');
+    expect(editedState.tasks[0]).toMatchObject({
+      title: 'Write full outline',
+      description: 'Draft all beats',
+      updatedAt: '2026-02-19T01:05:00.000Z'
+    });
 
     const completedState = tasksReducer(
       editedState,
@@ -82,6 +90,50 @@ describe('task actions and reducer', () => {
 
     const deletedState = tasksReducer(reopenedState, deleteTaskAction({ id: 't1' }));
     expect(deletedState.tasks).toEqual([]);
+  });
+
+  it('keeps completed/open transitions idempotent', () => {
+    const createdState = tasksReducer(
+      initialTasksState,
+      createTaskAction({ id: 't1', title: 'Ship MVP', now: '2026-02-19T01:00:00.000Z' })
+    );
+
+    const completedState = tasksReducer(
+      createdState,
+      completeTaskAction({ id: 't1', now: '2026-02-19T01:10:00.000Z' })
+    );
+
+    const completedAgainState = tasksReducer(
+      completedState,
+      completeTaskAction({ id: 't1', now: '2026-02-19T01:30:00.000Z' })
+    );
+
+    expect(completedAgainState.tasks[0]).toMatchObject({
+      status: TASK_STATUS.COMPLETED,
+      completedAt: '2026-02-19T01:10:00.000Z',
+      updatedAt: '2026-02-19T01:10:00.000Z'
+    });
+
+    const reopenedState = tasksReducer(
+      completedAgainState,
+      reopenTaskAction({ id: 't1', now: '2026-02-19T01:45:00.000Z' })
+    );
+
+    const reopenedAgainState = tasksReducer(
+      reopenedState,
+      reopenTaskAction({ id: 't1', now: '2026-02-19T02:00:00.000Z' })
+    );
+
+    expect(reopenedAgainState.tasks[0]).toMatchObject({
+      status: TASK_STATUS.OPEN,
+      completedAt: null,
+      updatedAt: '2026-02-19T01:45:00.000Z'
+    });
+  });
+
+  it('returns previous state for unknown action type', () => {
+    const result = tasksReducer(initialTasksState, { type: 'unknown/action' });
+    expect(result).toBe(initialTasksState);
   });
 
   it('guards invalid edit with empty title', () => {
@@ -133,7 +185,7 @@ describe('task persistence', () => {
     });
   });
 
-  it('loads and migrates legacy persisted tasks shape', () => {
+  it('loads and migrates legacy v0 persisted tasks shape', () => {
     const storage = mockStorage();
     storage.setItem(
       TASKS_STORAGE_KEY,
@@ -166,6 +218,48 @@ describe('task persistence', () => {
           updatedAt: '2026-02-18T01:00:00.000Z',
           description: 'legacy notes',
           completedAt: '2026-02-18T01:00:00.000Z'
+        }
+      ]
+    });
+  });
+
+  it('loads current version payload and normalizes invalid records', () => {
+    const storage = mockStorage();
+
+    storage.setItem(
+      TASKS_STORAGE_KEY,
+      JSON.stringify({
+        version: TASKS_STORAGE_VERSION,
+        payload: {
+          tasks: [
+            {
+              id: 't1',
+              title: '  Current task  ',
+              status: 'open',
+              createdAt: '2026-02-19T00:00:00.000Z',
+              updatedAt: '2026-02-19T00:10:00.000Z',
+              description: null,
+              completedAt: null
+            },
+            {
+              id: 'missing-dates',
+              title: 'Invalid task'
+            }
+          ]
+        }
+      })
+    );
+
+    expect(loadTasksState(storage)).toEqual({
+      tasks: [
+        {
+          id: 't1',
+          title: 'Current task',
+          status: TASK_STATUS.OPEN,
+          createdAt: '2026-02-19T00:00:00.000Z',
+          updatedAt: '2026-02-19T00:10:00.000Z',
+          description: null,
+          completedAt: null
         }
       ]
     });

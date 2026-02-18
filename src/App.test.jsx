@@ -1,5 +1,5 @@
-import { afterEach, beforeEach } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, beforeEach, vi } from 'vitest';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import App from './App';
 import { TASKS_STORAGE_KEY, TASKS_STORAGE_VERSION } from './state/tasks';
 
@@ -22,9 +22,9 @@ function createMockStorage() {
   };
 }
 
-function createTask({ title, description } = {}) {
+function setCreateForm({ title, description } = {}) {
   if (title !== undefined) {
-    fireEvent.change(screen.getByLabelText(/title/i), { target: { value: title } });
+    fireEvent.change(screen.getByLabelText(/^title$/i), { target: { value: title } });
   }
 
   if (description !== undefined) {
@@ -32,16 +32,25 @@ function createTask({ title, description } = {}) {
       target: { value: description }
     });
   }
+}
 
+function createTask({ title, description } = {}) {
+  setCreateForm({ title, description });
   fireEvent.click(screen.getByRole('button', { name: /add task/i }));
 }
 
-describe('App', () => {
+function getVisibleTaskTitles() {
+  return screen.getAllByRole('heading', { level: 3 }).map((node) => node.textContent);
+}
+
+describe('App core UI flows', () => {
   let originalLocalStorage;
 
   beforeEach(() => {
-    originalLocalStorage = globalThis.localStorage;
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-02-19T00:00:00.000Z'));
 
+    originalLocalStorage = globalThis.localStorage;
     Object.defineProperty(globalThis, 'localStorage', {
       configurable: true,
       value: createMockStorage()
@@ -49,6 +58,8 @@ describe('App', () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
+
     Object.defineProperty(globalThis, 'localStorage', {
       configurable: true,
       value: originalLocalStorage
@@ -98,28 +109,35 @@ describe('App', () => {
     expect(screen.getByText(/no tasks yet/i)).toBeInTheDocument();
   });
 
-  it('supports baseline search, status filter, and sorting', () => {
+  it('supports search/filter/sort controls', () => {
     render(<App />);
 
+    vi.setSystemTime(new Date('2026-02-19T00:00:01.000Z'));
     createTask({ title: 'Bravo item', description: 'secondary note' });
+
+    vi.setSystemTime(new Date('2026-02-19T00:00:02.000Z'));
     createTask({ title: 'Alpha item', description: 'primary note' });
 
+    vi.setSystemTime(new Date('2026-02-19T00:00:03.000Z'));
+    createTask({ title: 'Charlie item', description: 'secondary note' });
+
     fireEvent.change(screen.getByLabelText(/^search$/i), { target: { value: 'primary' } });
-    expect(screen.getByRole('heading', { name: /alpha item/i })).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: /bravo item/i })).not.toBeInTheDocument();
+    expect(getVisibleTaskTitles()).toEqual(['Alpha item']);
 
     fireEvent.change(screen.getByLabelText(/^search$/i), { target: { value: '' } });
     fireEvent.click(screen.getAllByRole('button', { name: /mark completed/i })[0]);
 
     fireEvent.change(screen.getByLabelText(/^status$/i), { target: { value: 'completed' } });
     expect(screen.getByText('Completed', { selector: '.status-badge' })).toBeInTheDocument();
-    expect(screen.getAllByRole('heading', { level: 3 })).toHaveLength(1);
+    expect(getVisibleTaskTitles()).toHaveLength(1);
 
     fireEvent.change(screen.getByLabelText(/^status$/i), { target: { value: 'all' } });
-    fireEvent.change(screen.getByLabelText(/^sort$/i), { target: { value: 'title-asc' } });
 
-    const titles = screen.getAllByRole('heading', { level: 3 }).map((node) => node.textContent);
-    expect(titles).toEqual(['Alpha item', 'Bravo item']);
+    fireEvent.change(screen.getByLabelText(/^sort$/i), { target: { value: 'title-asc' } });
+    expect(getVisibleTaskTitles()).toEqual(['Alpha item', 'Bravo item', 'Charlie item']);
+
+    fireEvent.change(screen.getByLabelText(/^sort$/i), { target: { value: 'created-asc' } });
+    expect(getVisibleTaskTitles()).toEqual(['Bravo item', 'Alpha item', 'Charlie item']);
   });
 
   it('persists tasks across remounts', () => {
@@ -134,8 +152,9 @@ describe('App', () => {
     unmount();
     render(<App />);
 
-    expect(screen.getByRole('heading', { name: /persisted task/i })).toBeInTheDocument();
-    expect(screen.getByText(/keep between reloads/i)).toBeInTheDocument();
+    const taskItem = screen.getByRole('listitem');
+    expect(within(taskItem).getByRole('heading', { name: /persisted task/i })).toBeInTheDocument();
+    expect(within(taskItem).getByText(/keep between reloads/i)).toBeInTheDocument();
   });
 
   it('does not clobber future-version storage on initial mount', () => {
