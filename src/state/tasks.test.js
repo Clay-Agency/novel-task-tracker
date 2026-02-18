@@ -1,11 +1,16 @@
 import { TASK_STATUS, createTask } from '../domain/task';
 import {
+  TASKS_STORAGE_KEY,
+  TASKS_STORAGE_VERSION,
   completeTaskAction,
   createTaskAction,
   createTasksStore,
   deleteTaskAction,
   editTaskAction,
   initialTasksState,
+  loadTasksState,
+  loadTasksStateResult,
+  persistTasksState,
   reopenTaskAction,
   tasksReducer
 } from './tasks';
@@ -88,6 +93,115 @@ describe('task actions and reducer', () => {
     expect(() => completeTaskAction({})).toThrow(/id is required/i);
     expect(() => reopenTaskAction({})).toThrow(/id is required/i);
     expect(() => deleteTaskAction({})).toThrow(/id is required/i);
+  });
+});
+
+describe('task persistence', () => {
+  const mockStorage = () => {
+    const storage = new Map();
+    return {
+      getItem(key) {
+        return storage.has(key) ? storage.get(key) : null;
+      },
+      setItem(key, value) {
+        storage.set(key, value);
+      }
+    };
+  };
+
+  it('persists state with versioned payload', () => {
+    const storage = mockStorage();
+    const state = {
+      tasks: [
+        {
+          id: 't1',
+          title: 'Persist me',
+          status: TASK_STATUS.OPEN,
+          createdAt: '2026-02-19T00:00:00.000Z',
+          updatedAt: '2026-02-19T00:00:00.000Z',
+          description: null,
+          completedAt: null
+        }
+      ]
+    };
+
+    persistTasksState(state, storage);
+
+    expect(JSON.parse(storage.getItem(TASKS_STORAGE_KEY))).toEqual({
+      version: TASKS_STORAGE_VERSION,
+      payload: state
+    });
+  });
+
+  it('loads and migrates legacy persisted tasks shape', () => {
+    const storage = mockStorage();
+    storage.setItem(
+      TASKS_STORAGE_KEY,
+      JSON.stringify({
+        tasks: [
+          {
+            id: 'legacy-1',
+            title: '  Legacy task  ',
+            status: 'completed',
+            createdAt: '2026-02-18T00:00:00.000Z',
+            updatedAt: '2026-02-18T01:00:00.000Z',
+            description: 'legacy notes',
+            completedAt: '2026-02-18T01:00:00.000Z'
+          },
+          {
+            id: 'legacy-2',
+            title: '   '
+          }
+        ]
+      })
+    );
+
+    expect(loadTasksState(storage)).toEqual({
+      tasks: [
+        {
+          id: 'legacy-1',
+          title: 'Legacy task',
+          status: TASK_STATUS.COMPLETED,
+          createdAt: '2026-02-18T00:00:00.000Z',
+          updatedAt: '2026-02-18T01:00:00.000Z',
+          description: 'legacy notes',
+          completedAt: '2026-02-18T01:00:00.000Z'
+        }
+      ]
+    });
+  });
+
+  it('flags future versions to skip initial persist and falls back for invalid JSON', () => {
+    const storage = mockStorage();
+
+    storage.setItem(TASKS_STORAGE_KEY, JSON.stringify({ version: TASKS_STORAGE_VERSION + 1, payload: { tasks: [] } }));
+    expect(loadTasksStateResult(storage)).toEqual({
+      state: initialTasksState,
+      skipInitialPersist: true
+    });
+
+    storage.setItem(TASKS_STORAGE_KEY, '{not-json');
+    expect(loadTasksState(storage)).toEqual(initialTasksState);
+  });
+
+  it('handles localStorage getter access errors without throwing', () => {
+    const originalDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+
+    Object.defineProperty(globalThis, 'localStorage', {
+      configurable: true,
+      get() {
+        throw new Error('denied');
+      }
+    });
+
+    expect(loadTasksState()).toEqual(initialTasksState);
+    expect(() => persistTasksState({ tasks: [] })).not.toThrow();
+
+    if (originalDescriptor) {
+      Object.defineProperty(globalThis, 'localStorage', originalDescriptor);
+    } else {
+      delete globalThis.localStorage;
+    }
   });
 });
 
