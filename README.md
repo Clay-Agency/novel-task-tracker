@@ -46,7 +46,10 @@ Gate must pass before merge:
 1. Create a branch from `main` using `feat/issue-<number>-<summary>`.
 2. Keep commits small and scoped to one issue.
 3. Open a PR that references the issue (example: `Closes #5`).
-4. Request review before merge.
+4. Follow the required 2-stage review process in [`CONTRIBUTING.md`](./CONTRIBUTING.md):
+   - Stage 1 self-review by author (xhigh reasoning)
+   - Stage 2 final review by Boe
+5. Use the PR checklist template and attach lint/test/build evidence.
 
 ## Core task domain model (Issue #6)
 Task shape in state:
