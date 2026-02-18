@@ -57,6 +57,11 @@ Task shape in state:
 - `updatedAt` (ISO timestamp, required)
 - `description` (string | null, optional)
 - `completedAt` (ISO timestamp | null, optional)
+- `dueDate` (`YYYY-MM-DD` | null, optional)
+- `priority` (`normal` | `high`, optional)
+- `estimatedDurationMin` (number | null, optional)
+- `energy` (`low` | `medium` | `high` | null, optional)
+- `context` (`deep-work` | `admin` | `errands` | `calls` | null, optional)
 
 State actions implemented in reducer/store:
 - create
@@ -74,7 +79,28 @@ Implemented in the app UI:
 - Visually distinct status badges/cards for open vs completed tasks.
 - Baseline list controls: search (title/description), status filter, and sort.
 
-Deferred to later issues:
-- Persistence (Issue #8)
-- Responsive refinements (Issue #9)
-- Novel differentiator feature (Issue #11)
+## Novel differentiator: Time-Energy Fit Queue (Issue #11)
+TEFQ adds a deterministic “Now queue” to help users pick what to do next based on current constraints.
+
+### Inputs
+- Per-task metadata: estimated duration, energy required, optional due date/priority/context.
+- Current constraints: available minutes, current energy, optional context filter.
+
+### Deterministic pilot scoring
+- `+3` if `task.duration <= availableTime`
+- `-2` if task exceeds available time (stretch item)
+- `+2` exact energy match, `+1` adjacent energy match
+- `+2` due within 24h, `+1` due within 3 days
+- `+1` high priority
+
+Tie-breakers:
+1. Higher total score
+2. Earlier due date
+3. Higher priority
+4. Earlier created timestamp
+
+### UX behavior
+- Top recommendations (default 5) show reason chips for transparency.
+- Completed tasks are excluded.
+- Tasks missing duration/energy are excluded from TEFQ ranking.
+- When context filter has no direct matches, closest alternatives appear in a fallback block with guidance to relax context.
