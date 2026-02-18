@@ -37,3 +37,20 @@ npm run build
 2. Keep commits small and scoped to one issue.
 3. Open a PR that references the issue (example: `Closes #5`).
 4. Request review before merge.
+
+## Core task domain model (Issue #6)
+Task shape in state:
+- `id` (string, required)
+- `title` (string, required, trimmed non-empty)
+- `status` (`open` | `completed`, required)
+- `createdAt` (ISO timestamp, required)
+- `updatedAt` (ISO timestamp, required)
+- `description` (string | null, optional)
+- `completedAt` (ISO timestamp | null, optional)
+
+State actions implemented in reducer/store:
+- create
+- edit
+- complete
+- reopen
+- delete
