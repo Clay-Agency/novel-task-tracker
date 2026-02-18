@@ -1,11 +1,12 @@
-import { useMemo, useReducer, useState } from 'react';
+import { useEffect, useMemo, useReducer, useState } from 'react';
 import './App.css';
 import {
   completeTaskAction,
   createTaskAction,
   deleteTaskAction,
   editTaskAction,
-  initialTasksState,
+  loadTasksState,
+  persistTasksState,
   reopenTaskAction,
   tasksReducer
 } from './state/tasks';
@@ -66,7 +67,7 @@ function selectVisibleTasks(tasks, { query, statusFilter, sortBy }) {
 }
 
 function App() {
-  const [state, dispatch] = useReducer(tasksReducer, initialTasksState);
+  const [state, dispatch] = useReducer(tasksReducer, undefined, loadTasksState);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [createError, setCreateError] = useState('');
@@ -78,6 +79,11 @@ function App() {
   const [editTitle, setEditTitle] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [editError, setEditError] = useState('');
+
+
+  useEffect(() => {
+    persistTasksState(state);
+  }, [state]);
 
   const visibleTasks = useMemo(
     () =>

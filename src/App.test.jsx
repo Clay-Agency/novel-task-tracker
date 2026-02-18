@@ -1,5 +1,26 @@
+import { afterEach, beforeEach } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import App from './App';
+import { TASKS_STORAGE_KEY, TASKS_STORAGE_VERSION } from './state/tasks';
+
+function createMockStorage() {
+  const storage = new Map();
+
+  return {
+    getItem(key) {
+      return storage.has(key) ? storage.get(key) : null;
+    },
+    setItem(key, value) {
+      storage.set(key, String(value));
+    },
+    removeItem(key) {
+      storage.delete(key);
+    },
+    clear() {
+      storage.clear();
+    }
+  };
+}
 
 function createTask({ title, description } = {}) {
   if (title !== undefined) {
@@ -16,6 +37,24 @@ function createTask({ title, description } = {}) {
 }
 
 describe('App', () => {
+  let originalLocalStorage;
+
+  beforeEach(() => {
+    originalLocalStorage = globalThis.localStorage;
+
+    Object.defineProperty(globalThis, 'localStorage', {
+      configurable: true,
+      value: createMockStorage()
+    });
+  });
+
+  afterEach(() => {
+    Object.defineProperty(globalThis, 'localStorage', {
+      configurable: true,
+      value: originalLocalStorage
+    });
+  });
+
   it('shows initial empty state', () => {
     render(<App />);
 
@@ -81,5 +120,21 @@ describe('App', () => {
 
     const titles = screen.getAllByRole('heading', { level: 3 }).map((node) => node.textContent);
     expect(titles).toEqual(['Alpha item', 'Bravo item']);
+  });
+
+  it('persists tasks across remounts', () => {
+    const { unmount } = render(<App />);
+
+    createTask({ title: 'Persisted task', description: 'Keep between reloads' });
+
+    const persisted = JSON.parse(window.localStorage.getItem(TASKS_STORAGE_KEY));
+    expect(persisted.version).toBe(TASKS_STORAGE_VERSION);
+    expect(persisted.payload.tasks).toHaveLength(1);
+
+    unmount();
+    render(<App />);
+
+    expect(screen.getByRole('heading', { name: /persisted task/i })).toBeInTheDocument();
+    expect(screen.getByText(/keep between reloads/i)).toBeInTheDocument();
   });
 });

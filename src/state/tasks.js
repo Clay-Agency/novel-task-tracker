@@ -8,6 +8,9 @@ export const TASK_ACTIONS = {
   DELETE: 'tasks/delete'
 };
 
+export const TASKS_STORAGE_KEY = 'novel-task-tracker/tasks';
+export const TASKS_STORAGE_VERSION = 1;
+
 export const initialTasksState = {
   tasks: []
 };
@@ -145,6 +148,118 @@ export function tasksReducer(state = initialTasksState, action = {}) {
 
     default:
       return state;
+  }
+}
+
+function isObject(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function normalizeStoredTask(rawTask) {
+  if (!isObject(rawTask)) {
+    return null;
+  }
+
+  const normalizedTitle = normalizeTitle(rawTask.title);
+  if (!normalizedTitle) {
+    return null;
+  }
+
+  const id = typeof rawTask.id === 'string' ? rawTask.id : null;
+  const createdAt = typeof rawTask.createdAt === 'string' ? rawTask.createdAt : null;
+  const updatedAt = typeof rawTask.updatedAt === 'string' ? rawTask.updatedAt : createdAt;
+
+  if (!id || !createdAt || !updatedAt) {
+    return null;
+  }
+
+  const status = rawTask.status === TASK_STATUS.COMPLETED ? TASK_STATUS.COMPLETED : TASK_STATUS.OPEN;
+
+  const completedAt =
+    status === TASK_STATUS.COMPLETED && typeof rawTask.completedAt === 'string' ? rawTask.completedAt : null;
+
+  return {
+    id,
+    title: normalizedTitle,
+    status,
+    createdAt,
+    updatedAt,
+    description: typeof rawTask.description === 'string' ? rawTask.description : null,
+    completedAt
+  };
+}
+
+function migrateTasksPayload(payload) {
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+
+  if (isObject(payload) && Array.isArray(payload.tasks)) {
+    return payload.tasks;
+  }
+
+  return [];
+}
+
+function migratePersistedState(rawPersistedState) {
+  if (!rawPersistedState) {
+    return initialTasksState;
+  }
+
+  const version =
+    isObject(rawPersistedState) && typeof rawPersistedState.version === 'number'
+      ? rawPersistedState.version
+      : 0;
+
+  if (version > TASKS_STORAGE_VERSION) {
+    return initialTasksState;
+  }
+
+  const rawTasks =
+    version === 0 ? migrateTasksPayload(rawPersistedState) : migrateTasksPayload(rawPersistedState.payload);
+
+  return {
+    tasks: rawTasks.map(normalizeStoredTask).filter(Boolean)
+  };
+}
+
+export function loadTasksState(storage = globalThis.localStorage) {
+  if (!storage || typeof storage.getItem !== 'function') {
+    return initialTasksState;
+  }
+
+  try {
+    const raw = storage.getItem(TASKS_STORAGE_KEY);
+
+    if (!raw) {
+      return initialTasksState;
+    }
+
+    return migratePersistedState(JSON.parse(raw));
+  } catch {
+    return initialTasksState;
+  }
+}
+
+export function persistTasksState(state, storage = globalThis.localStorage) {
+  if (!storage || typeof storage.setItem !== 'function') {
+    return;
+  }
+
+  const normalizedState = {
+    tasks: Array.isArray(state?.tasks) ? state.tasks : []
+  };
+
+  try {
+    storage.setItem(
+      TASKS_STORAGE_KEY,
+      JSON.stringify({
+        version: TASKS_STORAGE_VERSION,
+        payload: normalizedState
+      })
+    );
+  } catch {
+    // localStorage quota/security failures should not crash the app
   }
 }
 
