@@ -32,6 +32,16 @@ npm run test
 npm run build
 ```
 
+## Core test completion gate (Issue #12)
+Core test scope and checklist live in [`docs/testing/core-test-strategy.md`](./docs/testing/core-test-strategy.md).
+
+Gate must pass before merge:
+- `npm run lint`
+- `npm test`
+- Unit coverage for task domain/reducer/persistence logic
+- UI integration coverage for CRUD + search/filter/sort + persistence
+- Deterministic test behavior
+
 ## Branch / PR workflow
 1. Create a branch from `main` using `feat/issue-<number>-<summary>`.
 2. Keep commits small and scoped to one issue.
