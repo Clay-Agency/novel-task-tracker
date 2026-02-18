@@ -15,6 +15,11 @@ export const initialTasksState = {
   tasks: []
 };
 
+const defaultLoadResult = {
+  state: initialTasksState,
+  skipInitialPersist: false
+};
+
 export function createTaskAction({ title, description = null, now, id } = {}) {
   return {
     type: TASK_ACTIONS.CREATE,
@@ -203,7 +208,7 @@ function migrateTasksPayload(payload) {
 
 function migratePersistedState(rawPersistedState) {
   if (!rawPersistedState) {
-    return initialTasksState;
+    return defaultLoadResult;
   }
 
   const version =
@@ -212,37 +217,63 @@ function migratePersistedState(rawPersistedState) {
       : 0;
 
   if (version > TASKS_STORAGE_VERSION) {
-    return initialTasksState;
+    return {
+      state: initialTasksState,
+      skipInitialPersist: true
+    };
   }
 
   const rawTasks =
     version === 0 ? migrateTasksPayload(rawPersistedState) : migrateTasksPayload(rawPersistedState.payload);
 
   return {
-    tasks: rawTasks.map(normalizeStoredTask).filter(Boolean)
+    state: {
+      tasks: rawTasks.map(normalizeStoredTask).filter(Boolean)
+    },
+    skipInitialPersist: false
   };
 }
 
-export function loadTasksState(storage = globalThis.localStorage) {
-  if (!storage || typeof storage.getItem !== 'function') {
-    return initialTasksState;
+function resolveStorage(storage) {
+  if (storage !== undefined) {
+    return storage;
   }
 
   try {
-    const raw = storage.getItem(TASKS_STORAGE_KEY);
+    return globalThis.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+export function loadTasksStateResult(storage) {
+  const resolvedStorage = resolveStorage(storage);
+
+  if (!resolvedStorage || typeof resolvedStorage.getItem !== 'function') {
+    return defaultLoadResult;
+  }
+
+  try {
+    const raw = resolvedStorage.getItem(TASKS_STORAGE_KEY);
 
     if (!raw) {
-      return initialTasksState;
+      return defaultLoadResult;
     }
 
     return migratePersistedState(JSON.parse(raw));
   } catch {
-    return initialTasksState;
+    return defaultLoadResult;
   }
 }
 
-export function persistTasksState(state, storage = globalThis.localStorage) {
-  if (!storage || typeof storage.setItem !== 'function') {
+export function loadTasksState(storage) {
+  return loadTasksStateResult(storage).state;
+}
+
+export function persistTasksState(state, storage) {
+  const resolvedStorage = resolveStorage(storage);
+
+  if (!resolvedStorage || typeof resolvedStorage.setItem !== 'function') {
     return;
   }
 
@@ -251,7 +282,7 @@ export function persistTasksState(state, storage = globalThis.localStorage) {
   };
 
   try {
-    storage.setItem(
+    resolvedStorage.setItem(
       TASKS_STORAGE_KEY,
       JSON.stringify({
         version: TASKS_STORAGE_VERSION,

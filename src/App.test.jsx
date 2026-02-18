@@ -137,4 +137,19 @@ describe('App', () => {
     expect(screen.getByRole('heading', { name: /persisted task/i })).toBeInTheDocument();
     expect(screen.getByText(/keep between reloads/i)).toBeInTheDocument();
   });
+
+  it('does not clobber future-version storage on initial mount', () => {
+    const futurePayload = {
+      version: TASKS_STORAGE_VERSION + 1,
+      payload: {
+        tasks: [{ id: 'future-1', title: 'Future task' }]
+      }
+    };
+
+    window.localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(futurePayload));
+
+    render(<App />);
+
+    expect(JSON.parse(window.localStorage.getItem(TASKS_STORAGE_KEY))).toEqual(futurePayload);
+  });
 });

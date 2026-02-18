@@ -9,6 +9,7 @@ import {
   editTaskAction,
   initialTasksState,
   loadTasksState,
+  loadTasksStateResult,
   persistTasksState,
   reopenTaskAction,
   tasksReducer
@@ -170,14 +171,37 @@ describe('task persistence', () => {
     });
   });
 
-  it('falls back to initial state for future versions and invalid JSON', () => {
+  it('flags future versions to skip initial persist and falls back for invalid JSON', () => {
     const storage = mockStorage();
 
     storage.setItem(TASKS_STORAGE_KEY, JSON.stringify({ version: TASKS_STORAGE_VERSION + 1, payload: { tasks: [] } }));
-    expect(loadTasksState(storage)).toEqual(initialTasksState);
+    expect(loadTasksStateResult(storage)).toEqual({
+      state: initialTasksState,
+      skipInitialPersist: true
+    });
 
     storage.setItem(TASKS_STORAGE_KEY, '{not-json');
     expect(loadTasksState(storage)).toEqual(initialTasksState);
+  });
+
+  it('handles localStorage getter access errors without throwing', () => {
+    const originalDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+
+    Object.defineProperty(globalThis, 'localStorage', {
+      configurable: true,
+      get() {
+        throw new Error('denied');
+      }
+    });
+
+    expect(loadTasksState()).toEqual(initialTasksState);
+    expect(() => persistTasksState({ tasks: [] })).not.toThrow();
+
+    if (originalDescriptor) {
+      Object.defineProperty(globalThis, 'localStorage', originalDescriptor);
+    } else {
+      delete globalThis.localStorage;
+    }
   });
 });
 

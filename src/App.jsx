@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useReducer, useState } from 'react';
+import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import './App.css';
 import {
   completeTaskAction,
   createTaskAction,
   deleteTaskAction,
   editTaskAction,
-  loadTasksState,
+  loadTasksStateResult,
   persistTasksState,
   reopenTaskAction,
   tasksReducer
@@ -67,7 +67,9 @@ function selectVisibleTasks(tasks, { query, statusFilter, sortBy }) {
 }
 
 function App() {
-  const [state, dispatch] = useReducer(tasksReducer, undefined, loadTasksState);
+  const loadResult = useMemo(() => loadTasksStateResult(), []);
+  const skipInitialPersistRef = useRef(loadResult.skipInitialPersist);
+  const [state, dispatch] = useReducer(tasksReducer, loadResult.state);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [createError, setCreateError] = useState('');
@@ -80,8 +82,12 @@ function App() {
   const [editDescription, setEditDescription] = useState('');
   const [editError, setEditError] = useState('');
 
-
   useEffect(() => {
+    if (skipInitialPersistRef.current) {
+      skipInitialPersistRef.current = false;
+      return;
+    }
+
     persistTasksState(state);
   }, [state]);
 
