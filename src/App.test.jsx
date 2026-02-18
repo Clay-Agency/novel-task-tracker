@@ -22,7 +22,7 @@ function createMockStorage() {
   };
 }
 
-function setCreateForm({ title, description } = {}) {
+function setCreateForm({ title, description, dueDate, priority, duration, energy, context } = {}) {
   if (title !== undefined) {
     fireEvent.change(screen.getByLabelText(/^title$/i), { target: { value: title } });
   }
@@ -32,15 +32,38 @@ function setCreateForm({ title, description } = {}) {
       target: { value: description }
     });
   }
+
+  if (dueDate !== undefined) {
+    fireEvent.change(screen.getByLabelText(/due date \(optional\)/i), { target: { value: dueDate } });
+  }
+
+  if (priority !== undefined) {
+    fireEvent.change(screen.getByLabelText(/^priority$/i), { target: { value: priority } });
+  }
+
+  if (duration !== undefined) {
+    fireEvent.change(screen.getByLabelText(/^estimated duration$/i), { target: { value: duration } });
+  }
+
+  if (energy !== undefined) {
+    fireEvent.change(screen.getByLabelText(/^energy required$/i), { target: { value: energy } });
+  }
+
+  if (context !== undefined) {
+    fireEvent.change(screen.getByLabelText(/^context$/i), { target: { value: context } });
+  }
 }
 
-function createTask({ title, description } = {}) {
-  setCreateForm({ title, description });
+function createTask({ title, description, dueDate, priority, duration, energy, context } = {}) {
+  setCreateForm({ title, description, dueDate, priority, duration, energy, context });
   fireEvent.click(screen.getByRole('button', { name: /add task/i }));
 }
 
 function getVisibleTaskTitles() {
-  return screen.getAllByRole('heading', { level: 3 }).map((node) => node.textContent);
+  const taskList = screen.getByRole('list', { name: /task list/i });
+  return within(taskList)
+    .getAllByRole('heading', { level: 3 })
+    .map((node) => node.textContent);
 }
 
 describe('App core UI flows', () => {
@@ -66,38 +89,58 @@ describe('App core UI flows', () => {
     });
   });
 
-  it('shows initial empty state', () => {
+  it('shows initial empty state and TEFQ metadata guidance', () => {
     render(<App />);
 
     expect(screen.getByRole('heading', { name: /novel task tracker/i })).toBeInTheDocument();
     expect(screen.getByText(/no tasks yet/i)).toBeInTheDocument();
+    expect(screen.getByText(/no tefq-eligible tasks yet/i)).toBeInTheDocument();
   });
 
-  it('validates create form and adds a task', () => {
+  it('validates create form and adds a task with metadata', () => {
     render(<App />);
 
     createTask({ title: '   ' });
     expect(screen.getByRole('alert')).toHaveTextContent(/title is required/i);
 
-    createTask({ title: 'Draft opening scene', description: 'Set the conflict' });
+    createTask({
+      title: 'Draft opening scene',
+      description: 'Set the conflict',
+      dueDate: '2026-02-20',
+      priority: 'high',
+      duration: '30',
+      energy: 'high',
+      context: 'deep-work'
+    });
 
-    expect(screen.getByRole('heading', { name: /draft opening scene/i })).toBeInTheDocument();
-    expect(screen.getByText(/set the conflict/i)).toBeInTheDocument();
+    const taskList = screen.getByRole('list', { name: /task list/i });
+    expect(within(taskList).getByRole('heading', { name: /draft opening scene/i })).toBeInTheDocument();
+    expect(within(taskList).getByText(/set the conflict/i)).toBeInTheDocument();
+    expect(within(taskList).getByText(/priority: high/i)).toBeInTheDocument();
     expect(screen.queryByText(/no tasks yet/i)).not.toBeInTheDocument();
   });
 
-  it('supports edit, complete/reopen, and delete', () => {
+  it('supports edit, complete/reopen, and delete including TEFQ fields', () => {
     render(<App />);
 
-    createTask({ title: 'Write chapter plan' });
+    createTask({ title: 'Write chapter plan', duration: '15', energy: 'low' });
 
     fireEvent.click(screen.getByRole('button', { name: /edit/i }));
     fireEvent.change(screen.getByLabelText(/edit title/i), {
       target: { value: 'Write detailed chapter plan' }
     });
+    fireEvent.change(screen.getByLabelText(/edit estimated duration/i), {
+      target: { value: '60' }
+    });
+    fireEvent.change(screen.getByLabelText(/edit energy required/i), {
+      target: { value: 'high' }
+    });
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
 
-    expect(screen.getByRole('heading', { name: /write detailed chapter plan/i })).toBeInTheDocument();
+    const taskList = screen.getByRole('list', { name: /task list/i });
+    expect(within(taskList).getByRole('heading', { name: /write detailed chapter plan/i })).toBeInTheDocument();
+    expect(within(taskList).getByText(/duration: 60 min/i)).toBeInTheDocument();
+    expect(within(taskList).getByText(/energy: high/i)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /mark completed/i }));
     expect(screen.getByText('Completed', { selector: '.status-badge' })).toBeInTheDocument();
@@ -140,10 +183,29 @@ describe('App core UI flows', () => {
     expect(getVisibleTaskTitles()).toEqual(['Bravo item', 'Alpha item', 'Charlie item']);
   });
 
+  it('renders TEFQ recommendations and fallback context block with reason chips', () => {
+    render(<App />);
+
+    createTask({ title: 'Email editor', duration: '15', energy: 'low', context: 'admin', dueDate: '2026-02-20' });
+    createTask({ title: 'Outline chapter', duration: '30', energy: 'medium', context: 'deep-work' });
+
+    const recommendationList = screen.getByRole('list', { name: /now queue recommendations/i });
+    expect(within(recommendationList).getByRole('heading', { name: /outline chapter/i })).toBeInTheDocument();
+
+    const firstRecItem = within(recommendationList).getAllByRole('listitem')[0];
+    expect(within(firstRecItem).getAllByText(/fits 30m|energy match|due within/i).length).toBeGreaterThanOrEqual(2);
+
+    fireEvent.change(screen.getByLabelText(/context \(optional\)/i), { target: { value: 'calls' } });
+
+    expect(screen.getByText(/no matches for the selected context/i)).toBeInTheDocument();
+    const fallbackList = screen.getByRole('list', { name: /now queue fallback/i });
+    expect(within(fallbackList).getByRole('heading', { name: /email editor/i })).toBeInTheDocument();
+  });
+
   it('persists tasks across remounts', () => {
     const { unmount } = render(<App />);
 
-    createTask({ title: 'Persisted task', description: 'Keep between reloads' });
+    createTask({ title: 'Persisted task', description: 'Keep between reloads', duration: '30', energy: 'medium' });
 
     const persisted = JSON.parse(window.localStorage.getItem(TASKS_STORAGE_KEY));
     expect(persisted.version).toBe(TASKS_STORAGE_VERSION);
@@ -152,7 +214,8 @@ describe('App core UI flows', () => {
     unmount();
     render(<App />);
 
-    const taskItem = screen.getByRole('listitem');
+    const taskList = screen.getByRole('list', { name: /task list/i });
+    const taskItem = within(taskList).getByRole('listitem');
     expect(within(taskItem).getByRole('heading', { name: /persisted task/i })).toBeInTheDocument();
     expect(within(taskItem).getByText(/keep between reloads/i)).toBeInTheDocument();
   });

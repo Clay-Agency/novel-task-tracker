@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import './App.css';
+import { TASK_CONTEXT, TASK_ENERGY, TASK_PRIORITY } from './domain/task';
+import { buildNowQueue } from './domain/tefq';
 import {
   completeTaskAction,
   createTaskAction,
@@ -24,9 +26,46 @@ const SORT_OPTIONS = {
   TITLE_ASC: 'title-asc'
 };
 
+const TASK_DURATION_OPTIONS = [5, 15, 30, 60, 90];
+const NOW_TIME_PRESETS = [15, 30, 60, 120];
+
+const CONTEXT_OPTIONS = [
+  { value: TASK_CONTEXT.DEEP_WORK, label: 'Deep Work' },
+  { value: TASK_CONTEXT.ADMIN, label: 'Admin' },
+  { value: TASK_CONTEXT.ERRANDS, label: 'Errands' },
+  { value: TASK_CONTEXT.CALLS, label: 'Calls' }
+];
+
+const ENERGY_OPTIONS = [
+  { value: TASK_ENERGY.LOW, label: 'Low' },
+  { value: TASK_ENERGY.MEDIUM, label: 'Medium' },
+  { value: TASK_ENERGY.HIGH, label: 'High' }
+];
+
 function normalizeDescription(description) {
   const trimmed = description.trim();
   return trimmed.length > 0 ? trimmed : null;
+}
+
+function normalizeSelectValue(value) {
+  return value ? value : null;
+}
+
+function normalizeDuration(value) {
+  if (!value) {
+    return null;
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+function formatContext(value) {
+  return CONTEXT_OPTIONS.find((option) => option.value === value)?.label ?? 'No context';
+}
+
+function formatEnergy(value) {
+  return ENERGY_OPTIONS.find((option) => option.value === value)?.label ?? 'Not set';
 }
 
 function byDateDesc(a, b, field) {
@@ -70,9 +109,16 @@ function App() {
   const loadResult = useMemo(() => loadTasksStateResult(), []);
   const skipInitialPersistRef = useRef(loadResult.skipInitialPersist);
   const [state, dispatch] = useReducer(tasksReducer, loadResult.state);
+
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [dueDate, setDueDate] = useState('');
+  const [priority, setPriority] = useState(TASK_PRIORITY.NORMAL);
+  const [estimatedDurationMin, setEstimatedDurationMin] = useState('');
+  const [energy, setEnergy] = useState('');
+  const [context, setContext] = useState('');
   const [createError, setCreateError] = useState('');
+
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState(STATUS_FILTERS.ALL);
   const [sortBy, setSortBy] = useState(SORT_OPTIONS.UPDATED_DESC);
@@ -80,7 +126,17 @@ function App() {
   const [editingTaskId, setEditingTaskId] = useState(null);
   const [editTitle, setEditTitle] = useState('');
   const [editDescription, setEditDescription] = useState('');
+  const [editDueDate, setEditDueDate] = useState('');
+  const [editPriority, setEditPriority] = useState(TASK_PRIORITY.NORMAL);
+  const [editDuration, setEditDuration] = useState('');
+  const [editEnergy, setEditEnergy] = useState('');
+  const [editContext, setEditContext] = useState('');
   const [editError, setEditError] = useState('');
+
+  const [availableTimePreset, setAvailableTimePreset] = useState('30');
+  const [availableTimeCustom, setAvailableTimeCustom] = useState('');
+  const [nowEnergy, setNowEnergy] = useState(TASK_ENERGY.MEDIUM);
+  const [nowContext, setNowContext] = useState('');
 
   useEffect(() => {
     if (skipInitialPersistRef.current) {
@@ -101,6 +157,18 @@ function App() {
     [query, sortBy, state.tasks, statusFilter]
   );
 
+  const effectiveAvailableTimeMin = availableTimePreset === 'custom' ? normalizeDuration(availableTimeCustom) ?? 30 : Number(availableTimePreset);
+
+  const nowQueue = useMemo(
+    () =>
+      buildNowQueue(state.tasks, {
+        availableTimeMin: effectiveAvailableTimeMin,
+        currentEnergy: nowEnergy,
+        contextFilter: normalizeSelectValue(nowContext)
+      }),
+    [effectiveAvailableTimeMin, nowContext, nowEnergy, state.tasks]
+  );
+
   function handleCreate(event) {
     event.preventDefault();
 
@@ -108,11 +176,21 @@ function App() {
       dispatch(
         createTaskAction({
           title,
-          description: normalizeDescription(description)
+          description: normalizeDescription(description),
+          dueDate,
+          priority,
+          estimatedDurationMin: normalizeDuration(estimatedDurationMin),
+          energy: normalizeSelectValue(energy),
+          context: normalizeSelectValue(context)
         })
       );
       setTitle('');
       setDescription('');
+      setDueDate('');
+      setPriority(TASK_PRIORITY.NORMAL);
+      setEstimatedDurationMin('');
+      setEnergy('');
+      setContext('');
       setCreateError('');
     } catch (error) {
       setCreateError(error.message);
@@ -123,6 +201,11 @@ function App() {
     setEditingTaskId(task.id);
     setEditTitle(task.title);
     setEditDescription(task.description ?? '');
+    setEditDueDate(task.dueDate ?? '');
+    setEditPriority(task.priority ?? TASK_PRIORITY.NORMAL);
+    setEditDuration(task.estimatedDurationMin ? String(task.estimatedDurationMin) : '');
+    setEditEnergy(task.energy ?? '');
+    setEditContext(task.context ?? '');
     setEditError('');
   }
 
@@ -130,6 +213,11 @@ function App() {
     setEditingTaskId(null);
     setEditTitle('');
     setEditDescription('');
+    setEditDueDate('');
+    setEditPriority(TASK_PRIORITY.NORMAL);
+    setEditDuration('');
+    setEditEnergy('');
+    setEditContext('');
     setEditError('');
   }
 
@@ -139,7 +227,12 @@ function App() {
         editTaskAction({
           id: taskId,
           title: editTitle,
-          description: normalizeDescription(editDescription)
+          description: normalizeDescription(editDescription),
+          dueDate: editDueDate,
+          priority: editPriority,
+          estimatedDurationMin: normalizeDuration(editDuration),
+          energy: normalizeSelectValue(editEnergy),
+          context: normalizeSelectValue(editContext)
         })
       );
       cancelEdit();
@@ -157,6 +250,108 @@ function App() {
   return (
     <main className="app">
       <h1>Novel Task Tracker</h1>
+
+      <section className="panel" aria-label="Now queue">
+        <h2>Now queue (TEFQ)</h2>
+        <p className="panel-copy">Pick your current constraints to get deterministic “do this now” suggestions.</p>
+
+        <div className="controls">
+          <label htmlFor="now-time">Available time</label>
+          <select id="now-time" value={availableTimePreset} onChange={(event) => setAvailableTimePreset(event.target.value)}>
+            {NOW_TIME_PRESETS.map((minutes) => (
+              <option key={minutes} value={String(minutes)}>
+                {minutes} min
+              </option>
+            ))}
+            <option value="custom">Custom</option>
+          </select>
+
+          {availableTimePreset === 'custom' ? (
+            <>
+              <label htmlFor="now-time-custom">Custom minutes</label>
+              <input
+                id="now-time-custom"
+                type="number"
+                min="1"
+                value={availableTimeCustom}
+                onChange={(event) => setAvailableTimeCustom(event.target.value)}
+              />
+            </>
+          ) : null}
+
+          <label htmlFor="now-energy">Current energy</label>
+          <select id="now-energy" value={nowEnergy} onChange={(event) => setNowEnergy(event.target.value)}>
+            {ENERGY_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+
+          <label htmlFor="now-context">Context (optional)</label>
+          <select id="now-context" value={nowContext} onChange={(event) => setNowContext(event.target.value)}>
+            <option value="">Any context</option>
+            {CONTEXT_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {nowQueue.eligibleCount === 0 ? (
+          <p className="empty-state">
+            No TEFQ-eligible tasks yet. Add estimated duration and energy on tasks to unlock Now suggestions.
+          </p>
+        ) : null}
+
+        {nowQueue.eligibleCount > 0 && nowQueue.items.length === 0 && nowContext ? (
+          <>
+            <p className="empty-state">
+              No matches for the selected context. Try relaxing the context filter or review closest alternatives below.
+            </p>
+            {nowQueue.fallbackItems.length > 0 ? (
+              <ul className="task-list" aria-label="Now queue fallback">
+                {nowQueue.fallbackItems.map(({ task, score, reasons }) => (
+                  <li key={`fallback-${task.id}`} className="task-item task-item--open">
+                    <div className="task-header">
+                      <h3>{task.title}</h3>
+                      <span className="status-badge status-badge--open">Score {score}</span>
+                    </div>
+                    <div className="reason-chips">
+                      {reasons.slice(0, 3).map((reason) => (
+                        <span key={`${task.id}-${reason}`} className="reason-chip">
+                          {reason}
+                        </span>
+                      ))}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </>
+        ) : null}
+
+        {nowQueue.items.length > 0 ? (
+          <ul className="task-list" aria-label="Now queue recommendations">
+            {nowQueue.items.map(({ task, score, reasons }) => (
+              <li key={`now-${task.id}`} className="task-item task-item--open">
+                <div className="task-header">
+                  <h3>{task.title}</h3>
+                  <span className="status-badge status-badge--open">Score {score}</span>
+                </div>
+                <div className="reason-chips">
+                  {reasons.slice(0, 3).map((reason) => (
+                    <span key={`${task.id}-${reason}`} className="reason-chip">
+                      {reason}
+                    </span>
+                  ))}
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </section>
 
       <section className="panel" aria-label="Create task">
         <h2>Add task</h2>
@@ -179,6 +374,66 @@ function App() {
             rows={3}
             placeholder="Add context or notes"
           />
+
+          <div className="controls">
+            <div>
+              <label htmlFor="task-due-date">Due date (optional)</label>
+              <input
+                id="task-due-date"
+                type="date"
+                value={dueDate}
+                onChange={(event) => setDueDate(event.target.value)}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="task-priority">Priority</label>
+              <select id="task-priority" value={priority} onChange={(event) => setPriority(event.target.value)}>
+                <option value={TASK_PRIORITY.NORMAL}>Normal</option>
+                <option value={TASK_PRIORITY.HIGH}>High</option>
+              </select>
+            </div>
+
+            <div>
+              <label htmlFor="task-duration">Estimated duration</label>
+              <select
+                id="task-duration"
+                value={estimatedDurationMin}
+                onChange={(event) => setEstimatedDurationMin(event.target.value)}
+              >
+                <option value="">Not set</option>
+                {TASK_DURATION_OPTIONS.map((minutes) => (
+                  <option key={minutes} value={String(minutes)}>
+                    {minutes} min
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label htmlFor="task-energy">Energy required</label>
+              <select id="task-energy" value={energy} onChange={(event) => setEnergy(event.target.value)}>
+                <option value="">Not set</option>
+                {ENERGY_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label htmlFor="task-context">Context</label>
+              <select id="task-context" value={context} onChange={(event) => setContext(event.target.value)}>
+                <option value="">No context</option>
+                {CONTEXT_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
 
           {createError ? (
             <p className="error" role="alert">
@@ -253,6 +508,78 @@ function App() {
                       onChange={(event) => setEditDescription(event.target.value)}
                     />
 
+                    <div className="controls">
+                      <div>
+                        <label htmlFor={`edit-due-date-${task.id}`}>Edit due date</label>
+                        <input
+                          id={`edit-due-date-${task.id}`}
+                          type="date"
+                          value={editDueDate}
+                          onChange={(event) => setEditDueDate(event.target.value)}
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor={`edit-priority-${task.id}`}>Edit priority</label>
+                        <select
+                          id={`edit-priority-${task.id}`}
+                          value={editPriority}
+                          onChange={(event) => setEditPriority(event.target.value)}
+                        >
+                          <option value={TASK_PRIORITY.NORMAL}>Normal</option>
+                          <option value={TASK_PRIORITY.HIGH}>High</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label htmlFor={`edit-duration-${task.id}`}>Edit estimated duration</label>
+                        <select
+                          id={`edit-duration-${task.id}`}
+                          value={editDuration}
+                          onChange={(event) => setEditDuration(event.target.value)}
+                        >
+                          <option value="">Not set</option>
+                          {TASK_DURATION_OPTIONS.map((minutes) => (
+                            <option key={minutes} value={String(minutes)}>
+                              {minutes} min
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label htmlFor={`edit-energy-${task.id}`}>Edit energy required</label>
+                        <select
+                          id={`edit-energy-${task.id}`}
+                          value={editEnergy}
+                          onChange={(event) => setEditEnergy(event.target.value)}
+                        >
+                          <option value="">Not set</option>
+                          {ENERGY_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label htmlFor={`edit-context-${task.id}`}>Edit context</label>
+                        <select
+                          id={`edit-context-${task.id}`}
+                          value={editContext}
+                          onChange={(event) => setEditContext(event.target.value)}
+                        >
+                          <option value="">No context</option>
+                          {CONTEXT_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
                     {editError ? (
                       <p className="error" role="alert">
                         {editError}
@@ -278,6 +605,11 @@ function App() {
                     </div>
                     {task.description ? <p className="task-description">{task.description}</p> : null}
                     <p className="task-meta">Updated: {new Date(task.updatedAt).toLocaleString()}</p>
+                    <p className="task-meta task-meta--stacked">
+                      Due: {task.dueDate ?? 'Not set'} · Priority: {task.priority === TASK_PRIORITY.HIGH ? 'High' : 'Normal'} ·
+                      Duration: {task.estimatedDurationMin ? `${task.estimatedDurationMin} min` : 'Not set'} · Energy:{' '}
+                      {formatEnergy(task.energy)} · Context: {formatContext(task.context)}
+                    </p>
                     <div className="task-actions">
                       <button type="button" onClick={() => startEdit(task)}>
                         Edit

@@ -1,4 +1,4 @@
-import { TASK_STATUS, createTask } from '../domain/task';
+import { TASK_ENERGY, TASK_PRIORITY, TASK_STATUS, createTask } from '../domain/task';
 import {
   TASKS_STORAGE_KEY,
   TASKS_STORAGE_VERSION,
@@ -21,6 +21,11 @@ describe('task schema', () => {
       id: 't1',
       title: '  Draft chapter 1  ',
       description: 'optional details',
+      dueDate: '2026-02-20',
+      priority: TASK_PRIORITY.HIGH,
+      estimatedDurationMin: 30,
+      energy: TASK_ENERGY.HIGH,
+      context: 'deep-work',
       now: '2026-02-19T00:00:00.000Z'
     });
 
@@ -31,7 +36,12 @@ describe('task schema', () => {
       createdAt: '2026-02-19T00:00:00.000Z',
       updatedAt: '2026-02-19T00:00:00.000Z',
       description: 'optional details',
-      completedAt: null
+      completedAt: null,
+      dueDate: '2026-02-20',
+      priority: TASK_PRIORITY.HIGH,
+      estimatedDurationMin: 30,
+      energy: TASK_ENERGY.HIGH,
+      context: 'deep-work'
     });
   });
 
@@ -44,14 +54,22 @@ describe('task actions and reducer', () => {
   it('runs create/edit/complete/reopen/delete flow', () => {
     const createdState = tasksReducer(
       initialTasksState,
-      createTaskAction({ id: 't1', title: 'Write outline', now: '2026-02-19T01:00:00.000Z' })
+      createTaskAction({
+        id: 't1',
+        title: 'Write outline',
+        estimatedDurationMin: 60,
+        energy: TASK_ENERGY.MEDIUM,
+        now: '2026-02-19T01:00:00.000Z'
+      })
     );
 
     expect(createdState.tasks).toHaveLength(1);
     expect(createdState.tasks[0]).toMatchObject({
       id: 't1',
       title: 'Write outline',
-      status: TASK_STATUS.OPEN
+      status: TASK_STATUS.OPEN,
+      estimatedDurationMin: 60,
+      energy: TASK_ENERGY.MEDIUM
     });
 
     const editedState = tasksReducer(
@@ -60,12 +78,22 @@ describe('task actions and reducer', () => {
         id: 't1',
         title: 'Write full outline',
         description: 'Draft all beats',
+        dueDate: '2026-02-21',
+        priority: TASK_PRIORITY.HIGH,
+        estimatedDurationMin: 30,
+        energy: TASK_ENERGY.HIGH,
+        context: 'deep-work',
         now: '2026-02-19T01:05:00.000Z'
       })
     );
     expect(editedState.tasks[0]).toMatchObject({
       title: 'Write full outline',
       description: 'Draft all beats',
+      dueDate: '2026-02-21',
+      priority: TASK_PRIORITY.HIGH,
+      estimatedDurationMin: 30,
+      energy: TASK_ENERGY.HIGH,
+      context: 'deep-work',
       updatedAt: '2026-02-19T01:05:00.000Z'
     });
 
@@ -172,7 +200,12 @@ describe('task persistence', () => {
           createdAt: '2026-02-19T00:00:00.000Z',
           updatedAt: '2026-02-19T00:00:00.000Z',
           description: null,
-          completedAt: null
+          completedAt: null,
+          dueDate: null,
+          priority: TASK_PRIORITY.NORMAL,
+          estimatedDurationMin: null,
+          energy: null,
+          context: null
         }
       ]
     };
@@ -217,7 +250,12 @@ describe('task persistence', () => {
           createdAt: '2026-02-18T00:00:00.000Z',
           updatedAt: '2026-02-18T01:00:00.000Z',
           description: 'legacy notes',
-          completedAt: '2026-02-18T01:00:00.000Z'
+          completedAt: '2026-02-18T01:00:00.000Z',
+          dueDate: null,
+          priority: TASK_PRIORITY.NORMAL,
+          estimatedDurationMin: null,
+          energy: null,
+          context: null
         }
       ]
     });
@@ -239,7 +277,12 @@ describe('task persistence', () => {
               createdAt: '2026-02-19T00:00:00.000Z',
               updatedAt: '2026-02-19T00:10:00.000Z',
               description: null,
-              completedAt: null
+              completedAt: null,
+              dueDate: '2026-02-20',
+              priority: 'high',
+              estimatedDurationMin: 15,
+              energy: 'low',
+              context: 'calls'
             },
             {
               id: 'missing-dates',
@@ -259,7 +302,12 @@ describe('task persistence', () => {
           createdAt: '2026-02-19T00:00:00.000Z',
           updatedAt: '2026-02-19T00:10:00.000Z',
           description: null,
-          completedAt: null
+          completedAt: null,
+          dueDate: '2026-02-20',
+          priority: TASK_PRIORITY.HIGH,
+          estimatedDurationMin: 15,
+          energy: TASK_ENERGY.LOW,
+          context: 'calls'
         }
       ]
     });

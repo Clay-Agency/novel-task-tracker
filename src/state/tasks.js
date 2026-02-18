@@ -1,4 +1,16 @@
-import { TASK_STATUS, assertValidTitle, createTask, normalizeTitle } from '../domain/task';
+import {
+  TASK_ENERGY,
+  TASK_PRIORITY,
+  TASK_STATUS,
+  assertValidTitle,
+  createTask,
+  normalizeContext,
+  normalizeDueDate,
+  normalizeEnergy,
+  normalizeEstimatedDurationMin,
+  normalizePriority,
+  normalizeTitle
+} from '../domain/task';
 
 export const TASK_ACTIONS = {
   CREATE: 'tasks/create',
@@ -9,7 +21,7 @@ export const TASK_ACTIONS = {
 };
 
 export const TASKS_STORAGE_KEY = 'novel-task-tracker/tasks';
-export const TASKS_STORAGE_VERSION = 1;
+export const TASKS_STORAGE_VERSION = 2;
 
 export const initialTasksState = {
   tasks: []
@@ -20,14 +32,34 @@ const defaultLoadResult = {
   skipInitialPersist: false
 };
 
-export function createTaskAction({ title, description = null, now, id } = {}) {
+export function createTaskAction({
+  title,
+  description = null,
+  dueDate = null,
+  priority = TASK_PRIORITY.NORMAL,
+  estimatedDurationMin = null,
+  energy = null,
+  context = null,
+  now,
+  id
+} = {}) {
   return {
     type: TASK_ACTIONS.CREATE,
-    payload: createTask({ title, description, now, id })
+    payload: createTask({ title, description, dueDate, priority, estimatedDurationMin, energy, context, now, id })
   };
 }
 
-export function editTaskAction({ id, title, description, now = new Date().toISOString() } = {}) {
+export function editTaskAction({
+  id,
+  title,
+  description,
+  dueDate,
+  priority,
+  estimatedDurationMin,
+  energy,
+  context,
+  now = new Date().toISOString()
+} = {}) {
   if (!id) {
     throw new Error('Task id is required');
   }
@@ -42,7 +74,12 @@ export function editTaskAction({ id, title, description, now = new Date().toISOS
       id,
       now,
       title: title === undefined ? undefined : normalizeTitle(title),
-      description
+      description: description === undefined ? undefined : description,
+      dueDate: dueDate === undefined ? undefined : dueDate,
+      priority,
+      estimatedDurationMin,
+      energy,
+      context
     }
   };
 }
@@ -93,13 +130,21 @@ export function tasksReducer(state = initialTasksState, action = {}) {
       };
 
     case TASK_ACTIONS.EDIT: {
-      const { id, now, title, description } = action.payload;
+      const { id, now, title, description, dueDate, priority, estimatedDurationMin, energy, context } = action.payload;
       return {
         ...state,
         tasks: mapTaskById(state.tasks, id, (task) => ({
           ...task,
           title: title === undefined ? task.title : title,
-          description: description === undefined ? task.description : description,
+          description: description === undefined ? task.description : normalizeDescription(description),
+          dueDate: dueDate === undefined ? task.dueDate : normalizeDueDate(dueDate),
+          priority: priority === undefined ? task.priority : normalizePriority(priority),
+          estimatedDurationMin:
+            estimatedDurationMin === undefined
+              ? task.estimatedDurationMin
+              : normalizeEstimatedDurationMin(estimatedDurationMin),
+          energy: energy === undefined ? task.energy : normalizeEnergy(energy),
+          context: context === undefined ? task.context : normalizeContext(context),
           updatedAt: now
         }))
       };
@@ -160,6 +205,15 @@ function isObject(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
+function normalizeDescription(description) {
+  if (typeof description !== 'string') {
+    return null;
+  }
+
+  const trimmed = description.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
 function normalizeStoredTask(rawTask) {
   if (!isObject(rawTask)) {
     return null;
@@ -189,8 +243,13 @@ function normalizeStoredTask(rawTask) {
     status,
     createdAt,
     updatedAt,
-    description: typeof rawTask.description === 'string' ? rawTask.description : null,
-    completedAt
+    description: normalizeDescription(rawTask.description),
+    completedAt,
+    dueDate: normalizeDueDate(rawTask.dueDate),
+    priority: normalizePriority(rawTask.priority),
+    estimatedDurationMin: normalizeEstimatedDurationMin(rawTask.estimatedDurationMin),
+    energy: normalizeEnergy(rawTask.energy),
+    context: normalizeContext(rawTask.context)
   };
 }
 
@@ -308,3 +367,5 @@ export function createTasksStore(initialState = initialTasksState) {
     }
   };
 }
+
+export { TASK_ENERGY, TASK_PRIORITY };
