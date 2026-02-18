@@ -107,3 +107,6 @@ Tie-breakers:
 - Completed tasks are excluded.
 - Tasks missing duration/energy are excluded from TEFQ ranking.
 - When context filter has no direct matches, closest alternatives appear in a fallback block with guidance to relax context.
+
+## Responsive UX QA checklist (Issue #9)
+Use the quick manual checklist at [`docs/qa/responsive-qa-checklist.md`](./docs/qa/responsive-qa-checklist.md) when validating mobile/desktop behavior before merge.
