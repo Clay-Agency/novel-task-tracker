@@ -73,6 +73,37 @@ describe('buildNowQueue', () => {
     expect(queue.items[0].task.id).toBe('eligible');
   });
 
+
+  it('scores due windows with non-negative boundaries and keeps overdue neutral', () => {
+    const now = '2026-02-19T00:00:00.000Z';
+    const tasks = [
+      makeTask({ id: 'overdue', dueDate: '2026-02-18T23:59:59.999Z' }),
+      makeTask({ id: 'exactly-24h', dueDate: '2026-02-20T00:00:00.000Z' }),
+      makeTask({ id: 'between-24h-72h', dueDate: '2026-02-21T00:00:00.000Z' }),
+      makeTask({ id: 'over-72h', dueDate: '2026-02-22T01:00:00.000Z' })
+    ];
+
+    const queue = buildNowQueue(tasks, {
+      availableTimeMin: 30,
+      currentEnergy: TASK_ENERGY.MEDIUM,
+      now,
+      limit: 10
+    });
+
+    const byId = Object.fromEntries(queue.items.map((item) => [item.task.id, item]));
+
+    expect(byId['exactly-24h'].score).toBe(7);
+    expect(byId['between-24h-72h'].score).toBe(6);
+    expect(byId['over-72h'].score).toBe(5);
+    expect(byId.overdue.score).toBe(5);
+
+    expect(byId['exactly-24h'].reasons).toEqual(expect.arrayContaining(['due within 24h']));
+    expect(byId['between-24h-72h'].reasons).toEqual(expect.arrayContaining(['due within 3 days']));
+    expect(byId['over-72h'].reasons).not.toContain('due within 24h');
+    expect(byId['over-72h'].reasons).not.toContain('due within 3 days');
+    expect(byId.overdue.reasons).not.toContain('due within 24h');
+    expect(byId.overdue.reasons).not.toContain('due within 3 days');
+  });
   it('uses fallback block for non-matching context when context filter is set', () => {
     const tasks = [
       makeTask({ id: 'admin-task', context: 'admin' }),
