@@ -54,3 +54,17 @@ State actions implemented in reducer/store:
 - complete
 - reopen
 - delete
+
+## Core UI flows (Issue #7)
+Implemented in the app UI:
+- Create task form with title validation and optional description.
+- Task list with empty states.
+- Update flows: edit, complete/reopen.
+- Delete flow.
+- Visually distinct status badges/cards for open vs completed tasks.
+- Baseline list controls: search (title/description), status filter, and sort.
+
+Deferred to later issues:
+- Persistence (Issue #8)
+- Responsive refinements (Issue #9)
+- Novel differentiator feature (Issue #11)
