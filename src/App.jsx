@@ -251,7 +251,7 @@ function App() {
     <main className="app">
       <h1>Novel Task Tracker</h1>
 
-      <section className="panel" aria-label="Now queue">
+      <section className="panel panel--now" aria-label="Now queue">
         <h2>Now queue (TEFQ)</h2>
         <p className="panel-copy">Pick your current constraints to get deterministic “do this now” suggestions.</p>
 
@@ -353,7 +353,7 @@ function App() {
         ) : null}
       </section>
 
-      <section className="panel" aria-label="Create task">
+      <section className="panel panel--create" aria-label="Create task">
         <h2>Add task</h2>
         <form onSubmit={handleCreate} className="task-form">
           <label htmlFor="task-title">Title</label>
@@ -445,7 +445,7 @@ function App() {
         </form>
       </section>
 
-      <section className="panel" aria-label="Filter and sort tasks">
+      <section className="panel panel--tasks" aria-label="Filter and sort tasks">
         <h2>Tasks</h2>
         <div className="controls">
           <label htmlFor="search-tasks">Search</label>
@@ -606,9 +606,11 @@ function App() {
                     {task.description ? <p className="task-description">{task.description}</p> : null}
                     <p className="task-meta">Updated: {new Date(task.updatedAt).toLocaleString()}</p>
                     <p className="task-meta task-meta--stacked">
-                      Due: {task.dueDate ?? 'Not set'} · Priority: {task.priority === TASK_PRIORITY.HIGH ? 'High' : 'Normal'} ·
-                      Duration: {task.estimatedDurationMin ? `${task.estimatedDurationMin} min` : 'Not set'} · Energy:{' '}
-                      {formatEnergy(task.energy)} · Context: {formatContext(task.context)}
+                      <span>Due: {task.dueDate ?? 'Not set'}</span>
+                      <span>Priority: {task.priority === TASK_PRIORITY.HIGH ? 'High' : 'Normal'}</span>
+                      <span>Duration: {task.estimatedDurationMin ? `${task.estimatedDurationMin} min` : 'Not set'}</span>
+                      <span>Energy: {formatEnergy(task.energy)}</span>
+                      <span>Context: {formatContext(task.context)}</span>
                     </p>
                     <div className="task-actions">
                       <button type="button" onClick={() => startEdit(task)}>
