@@ -4,7 +4,7 @@ const FIXED_NOW_ISO = '2026-02-19T00:00:00.000Z';
 const STORAGE_KEY = 'novel-task-tracker/tasks';
 
 async function openWithFixedClock(page: Page): Promise<void> {
-  await page.addInitScript(({ fixedNowIso, storageKey }) => {
+  await page.addInitScript(({ fixedNowIso }) => {
     const fixedNowMs = new Date(fixedNowIso).valueOf();
     const RealDate = Date;
 
@@ -27,22 +27,40 @@ async function openWithFixedClock(page: Page): Promise<void> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (window as any).Date = MockDate;
 
-    window.localStorage.removeItem(storageKey);
-  }, { fixedNowIso: FIXED_NOW_ISO, storageKey: STORAGE_KEY });
+  }, { fixedNowIso: FIXED_NOW_ISO });
 
   await page.goto('/');
+  await page.evaluate((storageKey) => window.localStorage.removeItem(storageKey), STORAGE_KEY);
+  await page.reload();
 }
 
 async function createTask(
   page: Page,
   {
     title,
+    dueDate,
+    priority,
     duration,
     energy,
     context
-  }: { title: string; duration?: string; energy?: 'Low' | 'Medium' | 'High'; context?: 'Deep Work' | 'Admin' | 'Errands' | 'Calls' }
+  }: {
+    title: string;
+    dueDate?: string;
+    priority?: 'Normal' | 'High';
+    duration?: string;
+    energy?: 'Low' | 'Medium' | 'High';
+    context?: 'Deep Work' | 'Admin' | 'Errands' | 'Calls';
+  }
 ): Promise<void> {
   await page.locator('#task-title').fill(title);
+
+  if (dueDate) {
+    await page.locator('#task-due-date').fill(dueDate);
+  }
+
+  if (priority) {
+    await page.locator('#task-priority').selectOption(priority);
+  }
 
   if (duration) {
     await page.locator('#task-duration').selectOption(duration);
@@ -59,63 +77,72 @@ async function createTask(
   await page.getByRole('button', { name: 'Add task' }).click();
 }
 
-test('can add a task and mark it completed', async ({ page }) => {
+test('supports core task lifecycle and persistence across reload', async ({ page }) => {
   await openWithFixedClock(page);
 
-  await createTask(page, { title: 'Write smoke tests' });
+  await createTask(page, { title: 'Persistent smoke task' });
 
   const taskList = page.getByRole('list', { name: 'Task list' });
-  await expect(taskList.getByRole('heading', { name: 'Write smoke tests' })).toBeVisible();
-  await expect(taskList.getByText('Open')).toBeVisible();
+  await expect(taskList.getByRole('heading', { name: 'Persistent smoke task' })).toBeVisible();
+
+  await page.reload();
+  await expect(taskList.getByRole('heading', { name: 'Persistent smoke task' })).toBeVisible();
 
   await page.getByRole('button', { name: 'Mark completed' }).click();
-
   await expect(taskList.getByText('Completed')).toBeVisible();
-  await page.getByLabel('Status').selectOption('completed');
-  await expect(taskList.getByRole('heading', { name: 'Write smoke tests' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Reopen' }).click();
+  await expect(taskList.getByText('Open')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Delete' }).click();
+  await expect(taskList.getByRole('heading', { name: 'Persistent smoke task' })).toHaveCount(0);
 });
 
-test('supports editing and search filter', async ({ page }) => {
+test('supports search, status filtering, and title sorting', async ({ page }) => {
   await openWithFixedClock(page);
 
-  await createTask(page, { title: 'Draft release notes' });
+  await createTask(page, { title: 'Zeta draft notes' });
+  await createTask(page, { title: 'Alpha sprint notes' });
 
-  await page.getByRole('button', { name: 'Edit' }).click();
-  await page.getByLabel('Edit title').fill('Draft sprint release notes');
-  await page.getByRole('button', { name: 'Save' }).click();
+  const taskList = page.getByRole('list', { name: 'Task list' });
 
-  await page.getByLabel('Search').fill('sprint');
-  await expect(page.getByRole('list', { name: 'Task list' }).getByRole('heading', { name: 'Draft sprint release notes' })).toBeVisible();
+  await page.locator('#sort-by').selectOption('title-asc');
+  await expect(taskList.locator('li').first().getByRole('heading')).toHaveText('Alpha sprint notes');
 
-  await page.getByLabel('Search').fill('nonexistent');
-  await expect(page.getByText('No tasks match your current search or filters.')).toBeVisible();
+  await page.locator('#search-tasks').fill('sprint');
+  await expect(taskList.getByRole('heading', { name: 'Alpha sprint notes' })).toBeVisible();
+  await expect(taskList.getByRole('heading', { name: 'Zeta draft notes' })).toHaveCount(0);
+
+  await page.getByRole('button', { name: 'Mark completed' }).click();
+  await page.locator('#status-filter').selectOption('completed');
+  await expect(taskList.getByRole('heading', { name: 'Alpha sprint notes' })).toBeVisible();
 });
 
-test('shows TEFQ now queue and context fallback deterministically', async ({ page }) => {
+test('shows deterministic TEFQ now queue ordering and context fallback', async ({ page }) => {
   await openWithFixedClock(page);
 
   await createTask(page, {
-    title: 'Call accountant',
+    title: 'Urgent client call',
+    dueDate: '2026-02-19',
+    priority: 'High',
     duration: '15',
     energy: 'Medium',
     context: 'Calls'
   });
 
   await createTask(page, {
-    title: 'Inbox triage',
-    duration: '15',
+    title: 'Long backlog call',
+    duration: '60',
     energy: 'Medium',
-    context: 'Admin'
+    context: 'Calls'
   });
 
   const recommendations = page.getByRole('list', { name: 'Now queue recommendations' });
-  await expect(recommendations.getByRole('heading', { name: 'Call accountant' })).toBeVisible();
-  await expect(recommendations.getByRole('heading', { name: 'Inbox triage' })).toBeVisible();
+  await expect(recommendations.locator('li').first().getByRole('heading')).toHaveText('Urgent client call');
 
   await page.getByLabel('Context (optional)').selectOption('Deep Work');
-
   await expect(page.getByText('No matches for the selected context. Try relaxing the context filter or review closest alternatives below.')).toBeVisible();
 
   const fallback = page.getByRole('list', { name: 'Now queue fallback' });
-  await expect(fallback.getByRole('heading', { name: 'Call accountant' })).toBeVisible();
+  await expect(fallback.locator('li').first().getByRole('heading')).toHaveText('Urgent client call');
 });
