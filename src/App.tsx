@@ -26,6 +26,16 @@ import {
   tasksReducer
 } from './state/tasks';
 import {
+  appendUsageLogAction,
+  exportUsageLogJson,
+  loadUsageLogStateResult,
+  persistUsageLogState,
+  setUsageLogEnabledAction,
+  usageLogReducer,
+  USAGE_EVENT_TYPES,
+  type UsageEventType
+} from './state/usageLog';
+import {
   applyThemePreference,
   clearThemePreference,
   loadThemePreferenceResult,
@@ -169,8 +179,11 @@ function App() {
   const skipInitialPersistRef = useRef(loadResult.skipInitialPersist);
   const loadThemeResult = useMemo(() => loadThemePreferenceResult(), []);
   const skipInitialThemePersistRef = useRef(loadThemeResult.skipInitialPersist);
+  const loadUsageLogResult = useMemo(() => loadUsageLogStateResult(), []);
+  const skipInitialUsageLogPersistRef = useRef(loadUsageLogResult.skipInitialPersist);
 
   const [state, dispatch] = useReducer(tasksReducer, loadResult.state);
+  const [usageLogState, dispatchUsageLog] = useReducer(usageLogReducer, loadUsageLogResult.state);
   const [themePreference, setThemePreference] = useState<ThemePreference>(loadThemeResult.preference);
 
   const [title, setTitle] = useState('');
@@ -203,6 +216,7 @@ function App() {
   const [nowContext, setNowContext] = useState<TaskContext | ''>('');
   const [announceMessage, setAnnounceMessage] = useState('');
   const [resetMessage, setResetMessage] = useState('');
+  const [showUsageLog, setShowUsageLog] = useState(false);
 
   const createTitleInputRef = useRef<HTMLInputElement | null>(null);
   const editTitleInputRef = useRef<HTMLInputElement | null>(null);
@@ -229,6 +243,15 @@ function App() {
 
     persistThemePreference(themePreference);
   }, [themePreference]);
+
+  useEffect(() => {
+    if (skipInitialUsageLogPersistRef.current) {
+      skipInitialUsageLogPersistRef.current = false;
+      return;
+    }
+
+    persistUsageLogState(usageLogState);
+  }, [usageLogState]);
 
   useEffect(() => {
     if (editingTaskId) {
@@ -259,21 +282,37 @@ function App() {
     [effectiveAvailableTimeMin, nowContext, nowEnergy, state.tasks]
   );
 
+  function logUsageEvent(eventType: UsageEventType, details: Record<string, unknown> | null = null): void {
+    dispatchUsageLog(appendUsageLogAction({ eventType, details }));
+  }
+
+  function logTefqUsage(source: 'time-preset' | 'energy' | 'context'): void {
+    logUsageEvent(USAGE_EVENT_TYPES.TEFQ_USED, {
+      source,
+      availableTimeMin: effectiveAvailableTimeMin,
+      energy: nowEnergy,
+      context: normalizeSelectValue(nowContext),
+      recommendationCount: nowQueue.items.length,
+      eligibleCount: nowQueue.eligibleCount
+    });
+  }
+
   function handleCreate(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
 
     try {
-      dispatch(
-        createTaskAction({
-          title,
-          description: normalizeDescription(description),
-          dueDate,
-          priority,
-          estimatedDurationMin: normalizeDuration(estimatedDurationMin),
-          energy: normalizeSelectValue(energy),
-          context: normalizeSelectValue(context)
-        })
-      );
+      const action = createTaskAction({
+        title,
+        description: normalizeDescription(description),
+        dueDate,
+        priority,
+        estimatedDurationMin: normalizeDuration(estimatedDurationMin),
+        energy: normalizeSelectValue(energy),
+        context: normalizeSelectValue(context)
+      });
+
+      dispatch(action);
+      logUsageEvent(USAGE_EVENT_TYPES.TASK_CREATED, { taskId: action.payload.id });
       setTitle('');
       setDescription('');
       setDueDate('');
@@ -333,6 +372,7 @@ function App() {
           context: normalizeSelectValue(editContext)
         })
       );
+      logUsageEvent(USAGE_EVENT_TYPES.TASK_EDITED, { taskId });
       cancelEdit(false);
       setResetMessage('');
       setAnnounceMessage('Task updated.');
@@ -345,12 +385,17 @@ function App() {
     dispatch(
       task.status === TASK_STATUS.COMPLETED ? reopenTaskAction({ id: task.id }) : completeTaskAction({ id: task.id })
     );
+    logUsageEvent(
+      task.status === TASK_STATUS.COMPLETED ? USAGE_EVENT_TYPES.TASK_REOPENED : USAGE_EVENT_TYPES.TASK_COMPLETED,
+      { taskId: task.id }
+    );
     setResetMessage('');
     setAnnounceMessage(task.status === TASK_STATUS.COMPLETED ? 'Task reopened.' : 'Task marked completed.');
   }
 
   function deleteTask(taskId: string): void {
     dispatch(deleteTaskAction({ id: taskId }));
+    logUsageEvent(USAGE_EVENT_TYPES.TASK_DELETED, { taskId });
     setResetMessage('');
     setAnnounceMessage('Task deleted.');
   }
@@ -372,6 +417,7 @@ function App() {
       setImportError('');
       setResetMessage('');
       setAnnounceMessage(`Exported ${state.tasks.length} ${state.tasks.length === 1 ? 'task' : 'tasks'} as JSON.`);
+      logUsageEvent(USAGE_EVENT_TYPES.TASKS_EXPORTED, { taskCount: state.tasks.length });
     } catch {
       setImportError('Unable to export tasks JSON.');
     }
@@ -395,6 +441,7 @@ function App() {
       setImportError('');
       setResetMessage('');
       setAnnounceMessage(`Imported ${importedTasks.length} ${importedTasks.length === 1 ? 'task' : 'tasks'} from JSON.`);
+      logUsageEvent(USAGE_EVENT_TYPES.TASKS_IMPORTED, { taskCount: importedTasks.length });
     } catch (error: unknown) {
       setImportError(getErrorMessage(error));
     } finally {
@@ -421,6 +468,8 @@ function App() {
       return;
     }
 
+    logUsageEvent(USAGE_EVENT_TYPES.APP_RESET, { taskCount: state.tasks.length });
+
     skipInitialPersistRef.current = true;
     skipInitialThemePersistRef.current = true;
     clearPersistedTasksState();
@@ -446,9 +495,41 @@ function App() {
     setAvailableTimeCustom('');
     setNowEnergy(TASK_ENERGY.MEDIUM);
     setNowContext('');
+    setShowUsageLog(false);
     setResetMessage('App data reset. All local task data and preferences were cleared.');
     setAnnounceMessage('App data reset.');
     createTitleInputRef.current?.focus();
+  }
+
+  function handleUsageLogToggle(enabled: boolean): void {
+    dispatchUsageLog(setUsageLogEnabledAction(enabled));
+
+    if (enabled) {
+      setAnnounceMessage('Local usage log enabled. Logging stays on this device only.');
+      return;
+    }
+
+    setAnnounceMessage('Local usage log disabled.');
+  }
+
+  function handleExportUsageLogJson(): void {
+    try {
+      const json = exportUsageLogJson(usageLogState);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const downloadLink = document.createElement('a');
+
+      downloadLink.href = url;
+      downloadLink.download = `novel-task-tracker-usage-log-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.append(downloadLink);
+      downloadLink.click();
+      downloadLink.remove();
+      URL.revokeObjectURL(url);
+
+      setAnnounceMessage('Exported local usage log JSON.');
+    } catch {
+      setAnnounceMessage('Unable to export local usage log JSON.');
+    }
   }
 
 
@@ -487,7 +568,10 @@ function App() {
               <select
                 id="now-time"
                 value={availableTimePreset}
-                onChange={(event) => setAvailableTimePreset(event.target.value)}
+                onChange={(event) => {
+                  setAvailableTimePreset(event.target.value);
+                  logTefqUsage('time-preset');
+                }}
               >
                 {NOW_TIME_PRESETS.map((minutes) => (
                   <option key={minutes} value={String(minutes)}>
@@ -516,7 +600,10 @@ function App() {
               <select
                 id="now-energy"
                 value={nowEnergy}
-                onChange={(event) => setNowEnergy(event.target.value as TaskEnergy)}
+                onChange={(event) => {
+                  setNowEnergy(event.target.value as TaskEnergy);
+                  logTefqUsage('energy');
+                }}
               >
                 {ENERGY_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -531,7 +618,10 @@ function App() {
               <select
                 id="now-context"
                 value={nowContext}
-                onChange={(event) => setNowContext(event.target.value as TaskContext | '')}
+                onChange={(event) => {
+                  setNowContext(event.target.value as TaskContext | '');
+                  logTefqUsage('context');
+                }}
               >
                 <option value="">Any context</option>
                 {CONTEXT_OPTIONS.map((option) => (
@@ -782,6 +872,54 @@ function App() {
             {resetMessage}
           </p>
         ) : null}
+
+        <section className="usage-log" aria-label="Local usage log">
+          <h3>Local usage log (optional)</h3>
+          <p className="task-meta">Stored only in this browser profile. Nothing is sent to any server.</p>
+
+          <label htmlFor="usage-log-enabled" className="usage-log-toggle">
+            <input
+              id="usage-log-enabled"
+              type="checkbox"
+              checked={usageLogState.enabled}
+              onChange={(event) => handleUsageLogToggle(event.target.checked)}
+            />
+            Enable local usage log
+          </label>
+
+          {!usageLogState.enabled ? (
+            <p className="empty-state">Usage log is off by default.</p>
+          ) : (
+            <>
+              <div className="task-actions">
+                <button type="button" onClick={() => setShowUsageLog((prev) => !prev)}>
+                  {showUsageLog ? 'Hide usage log' : 'View usage log'}
+                </button>
+                <button type="button" className="secondary" onClick={handleExportUsageLogJson}>
+                  Export usage log JSON
+                </button>
+              </div>
+
+              {showUsageLog ? (
+                usageLogState.entries.length === 0 ? (
+                  <p className="empty-state">No usage events yet.</p>
+                ) : (
+                  <ul className="task-list" aria-label="Usage log entries">
+                    {[...usageLogState.entries].reverse().map((entry) => (
+                      <li key={entry.id} className="task-item">
+                        <p className="task-meta">{new Date(entry.timestamp).toLocaleString()}</p>
+                        <p className="task-description">
+                          <strong>{entry.eventType}</strong>
+                        </p>
+                        {entry.details ? <pre className="usage-log-details">{JSON.stringify(entry.details, null, 2)}</pre> : null}
+                      </li>
+                    ))}
+                  </ul>
+                )
+              ) : null}
+            </>
+          )}
+        </section>
 
         <p className="sr-only" role="status" aria-live="polite">
           Showing {visibleTasks.length} {visibleTasks.length === 1 ? 'task' : 'tasks'}.

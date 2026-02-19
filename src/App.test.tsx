@@ -2,6 +2,7 @@ import { afterEach, beforeEach, vi } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import App from './App';
 import { TASKS_STORAGE_KEY, TASKS_STORAGE_VERSION } from './state/tasks';
+import { USAGE_LOG_STORAGE_KEY } from './state/usageLog';
 import { THEME_STORAGE_KEY } from './theme';
 
 interface MockStorage {
@@ -375,6 +376,27 @@ describe('App core UI flows', () => {
 
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent(/invalid json file/i);
+  });
+
+  it('keeps usage log opt-in by default and records local events after enabling', () => {
+    render(<App />);
+
+    expect((screen.getByLabelText(/enable local usage log/i) as HTMLInputElement).checked).toBe(false);
+    expect(screen.getByText(/usage log is off by default/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText(/enable local usage log/i));
+    createTask({ title: 'Usage logged task' });
+    fireEvent.click(screen.getByRole('button', { name: /view usage log/i }));
+
+    const logList = screen.getByRole('list', { name: /usage log entries/i });
+    expect(within(logList).getByText(/task\.created/i)).toBeInTheDocument();
+
+    const persisted = JSON.parse(window.localStorage.getItem(USAGE_LOG_STORAGE_KEY) ?? '{}') as {
+      payload?: { enabled?: boolean; entries?: unknown[] };
+    };
+
+    expect(persisted.payload?.enabled).toBe(true);
+    expect(Array.isArray(persisted.payload?.entries)).toBe(true);
   });
 
   it('resets app data after confirmation and clears persisted keys', () => {

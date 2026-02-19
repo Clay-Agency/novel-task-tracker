@@ -417,3 +417,36 @@ textarea:focus-visible {
     grid-column: 1 / -1;
   }
 }
+
+.usage-log {
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed color-mix(in srgb, var(--glass-border) 85%, transparent);
+}
+
+.usage-log h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+}
+
+.usage-log-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 0.35rem;
+}
+
+.usage-log-toggle input {
+  width: auto;
+}
+
+.usage-log-details {
+  margin: 0;
+  padding: 0.45rem 0.55rem;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--glass-surface) 85%, transparent);
+  border: 1px solid color-mix(in srgb, var(--glass-border) 86%, transparent);
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  overflow: auto;
+}
