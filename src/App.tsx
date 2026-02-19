@@ -1,4 +1,13 @@
-import { useEffect, useMemo, useReducer, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+  type KeyboardEvent
+} from 'react';
 import './App.css';
 import { TASK_CONTEXT, TASK_ENERGY, TASK_PRIORITY, TASK_STATUS, type Task, type TaskContext, type TaskEnergy } from './domain/task';
 import { buildNowQueue } from './domain/tefq';
@@ -7,6 +16,9 @@ import {
   createTaskAction,
   deleteTaskAction,
   editTaskAction,
+  exportTasksJson,
+  importTasksAction,
+  importTasksFromJson,
   loadTasksStateResult,
   persistTasksState,
   reopenTaskAction,
@@ -115,6 +127,26 @@ function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Something went wrong';
 }
 
+function readUploadedFileText(file: File): Promise<string> {
+  if (typeof file.text === 'function') {
+    return file.text();
+  }
+
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      resolve(typeof reader.result === 'string' ? reader.result : '');
+    };
+
+    reader.onerror = () => {
+      reject(new Error('Unable to read import file'));
+    };
+
+    reader.readAsText(file);
+  });
+}
+
 function App() {
   const loadResult = useMemo(() => loadTasksStateResult(), []);
   const skipInitialPersistRef = useRef(loadResult.skipInitialPersist);
@@ -142,6 +174,7 @@ function App() {
   const [editEnergy, setEditEnergy] = useState<TaskEnergy | ''>('');
   const [editContext, setEditContext] = useState<TaskContext | ''>('');
   const [editError, setEditError] = useState('');
+  const [importError, setImportError] = useState('');
 
   const [availableTimePreset, setAvailableTimePreset] = useState<string>('30');
   const [availableTimeCustom, setAvailableTimeCustom] = useState('');
@@ -151,6 +184,7 @@ function App() {
 
   const createTitleInputRef = useRef<HTMLInputElement | null>(null);
   const editTitleInputRef = useRef<HTMLInputElement | null>(null);
+  const importFileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (skipInitialPersistRef.current) {
@@ -279,6 +313,55 @@ function App() {
   function deleteTask(taskId: string): void {
     dispatch(deleteTaskAction({ id: taskId }));
     setAnnounceMessage('Task deleted.');
+  }
+
+  function handleExportTasksJson(): void {
+    try {
+      const json = exportTasksJson(state);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const downloadLink = document.createElement('a');
+
+      downloadLink.href = url;
+      downloadLink.download = `novel-task-tracker-tasks-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.append(downloadLink);
+      downloadLink.click();
+      downloadLink.remove();
+      URL.revokeObjectURL(url);
+
+      setImportError('');
+      setAnnounceMessage(`Exported ${state.tasks.length} ${state.tasks.length === 1 ? 'task' : 'tasks'} as JSON.`);
+    } catch {
+      setImportError('Unable to export tasks JSON.');
+    }
+  }
+
+  async function handleImportTasksJson(event: ChangeEvent<HTMLInputElement>): Promise<void> {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    try {
+      const fileContents = await readUploadedFileText(file);
+      const importedTasks = importTasksFromJson(fileContents);
+
+      dispatch(importTasksAction({ tasks: importedTasks }));
+      cancelEdit(false);
+      setCreateError('');
+      setEditError('');
+      setImportError('');
+      setAnnounceMessage(`Imported ${importedTasks.length} ${importedTasks.length === 1 ? 'task' : 'tasks'} from JSON.`);
+    } catch (error: unknown) {
+      setImportError(getErrorMessage(error));
+    } finally {
+      event.target.value = '';
+    }
+  }
+
+  function openImportTasksPicker(): void {
+    importFileInputRef.current?.click();
   }
 
   function handleEditKeyboard(event: KeyboardEvent<HTMLDivElement>): void {
@@ -571,6 +654,30 @@ function App() {
             </div>
           </div>
         </fieldset>
+
+        <div className="task-actions">
+          <button type="button" onClick={handleExportTasksJson}>
+            Export JSON
+          </button>
+          <button type="button" className="secondary" onClick={openImportTasksPicker}>
+            Import JSON
+          </button>
+          <input
+            ref={importFileInputRef}
+            type="file"
+            accept=".json,application/json"
+            className="sr-only"
+            onChange={(event) => {
+              void handleImportTasksJson(event);
+            }}
+          />
+        </div>
+
+        {importError ? (
+          <p className="error" role="alert">
+            {importError}
+          </p>
+        ) : null}
 
         <p className="sr-only" role="status" aria-live="polite">
           Showing {visibleTasks.length} {visibleTasks.length === 1 ? 'task' : 'tasks'}.

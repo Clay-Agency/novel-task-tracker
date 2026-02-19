@@ -118,6 +118,50 @@ test('supports search, status filtering, and title sorting', async ({ page }) =>
   await expect(taskList.getByRole('heading', { name: 'Alpha sprint notes' })).toBeVisible();
 });
 
+
+test('exports task JSON and imports replacement task list', async ({ page }) => {
+  await openWithFixedClock(page);
+
+  await createTask(page, { title: 'Export me first' });
+
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Export JSON' }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(/novel-task-tracker-tasks-\d{4}-\d{2}-\d{2}\.json/);
+
+  const importedPayload = {
+    version: 2,
+    payload: {
+      tasks: [
+        {
+          id: 'import-e2e-1',
+          title: 'Imported via e2e',
+          status: 'open',
+          createdAt: FIXED_NOW_ISO,
+          updatedAt: FIXED_NOW_ISO,
+          description: null,
+          completedAt: null,
+          dueDate: null,
+          priority: 'normal',
+          estimatedDurationMin: 15,
+          energy: 'low',
+          context: 'admin'
+        }
+      ]
+    }
+  };
+
+  await page.locator('input[type="file"]').setInputFiles({
+    name: 'import.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(importedPayload), 'utf8')
+  });
+
+  const taskList = page.getByRole('list', { name: 'Task list' });
+  await expect(taskList.getByRole('heading', { name: 'Imported via e2e' })).toBeVisible();
+  await expect(taskList.getByRole('heading', { name: 'Export me first' })).toHaveCount(0);
+});
+
 test('shows deterministic TEFQ now queue ordering and context fallback', async ({ page }) => {
   await openWithFixedClock(page);
 
