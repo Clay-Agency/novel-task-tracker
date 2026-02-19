@@ -39,6 +39,9 @@ npm run e2e
 npm run build
 ```
 
+## CI maintenance runbook (Issue #72)
+Weekly scheduled CI + manual dispatch procedure and failure triage: [`docs/ops/ci-maintenance-runbook.md`](./docs/ops/ci-maintenance-runbook.md).
+
 ## Core test completion gate (Issue #12)
 Core test scope and checklist live in [`docs/testing/core-test-strategy.md`](./docs/testing/core-test-strategy.md).
 
