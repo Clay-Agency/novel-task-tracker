@@ -115,3 +115,6 @@ Tie-breakers:
 
 ## Responsive UX QA checklist (Issue #9)
 Use the quick manual checklist at [`docs/qa/responsive-qa-checklist.md`](./docs/qa/responsive-qa-checklist.md) when validating mobile/desktop behavior before merge.
+
+## Pilot readiness + cross-browser QA plan (Issue #27)
+Use the pilot gate checklist and browser/device validation plan at [`docs/qa/pilot-readiness-cross-browser-plan.md`](./docs/qa/pilot-readiness-cross-browser-plan.md).
