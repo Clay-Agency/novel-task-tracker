@@ -9,6 +9,9 @@ This onboarding guide is for pilot participants and facilitators to align on:
 - how task data is stored,
 - and current pilot limitations.
 
+## Related pilot docs
+- FAQ + troubleshooting: [`docs/pilot/faq-troubleshooting.md`](./faq-troubleshooting.md)
+
 ## Pilot app link
 - Live app: https://clay-agency.github.io/novel-task-tracker/
 

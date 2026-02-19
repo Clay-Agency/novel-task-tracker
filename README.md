@@ -135,5 +135,6 @@ Use the pilot gate checklist and browser/device validation plan at [`docs/qa/pil
 ## Pilot onboarding packet + demo script (Issue #30)
 Use these docs for pilot participant onboarding, live walkthroughs, and structured feedback capture:
 - [`docs/pilot/onboarding.md`](./docs/pilot/onboarding.md)
+- [`docs/pilot/faq-troubleshooting.md`](./docs/pilot/faq-troubleshooting.md)
 - [`docs/pilot/demo-script.md`](./docs/pilot/demo-script.md)
 - [`docs/pilot/feedback-questions.md`](./docs/pilot/feedback-questions.md)
