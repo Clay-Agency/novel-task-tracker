@@ -155,3 +155,13 @@ Use **Import JSON** to replace the current list with tasks from a JSON file. Sup
 - Raw array shape: `[...]`
 
 Import validation rejects malformed JSON or unsupported envelopes. Individual invalid task records are skipped during normalization.
+
+## Diagnostics footer / in-app support links (Issue #48)
+A lightweight diagnostics footer appears at the bottom of the app and shows:
+- app version (from `package.json` at build time)
+- short commit SHA (from `git rev-parse --short HEAD` at build time)
+
+It also includes quick links for:
+- **Report a bug**: GitHub bug-report template
+- **QA docs**: `docs/qa/` folder
+- **Export JSON**: jumps to the in-app export/import actions

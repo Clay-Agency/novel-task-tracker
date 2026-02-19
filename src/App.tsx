@@ -64,6 +64,12 @@ const ENERGY_OPTIONS: { value: TaskEnergy; label: string }[] = [
   { value: TASK_ENERGY.HIGH, label: 'High' }
 ];
 
+
+const BUG_REPORT_URL = 'https://github.com/Clay-Agency/novel-task-tracker/issues/new?template=bug-report.md';
+const QA_DOCS_URL = 'https://github.com/Clay-Agency/novel-task-tracker/tree/main/docs/qa';
+const APP_VERSION = __APP_VERSION__;
+const APP_COMMIT_SHA = __APP_COMMIT_SHA__;
+
 function normalizeDescription(description: string): string | null {
   const trimmed = description.trim();
   return trimmed.length > 0 ? trimmed : null;
@@ -693,7 +699,7 @@ function App() {
           </div>
         </fieldset>
 
-        <div className="task-actions">
+        <div className="task-actions" id="data-portability">
           <button type="button" onClick={handleExportTasksJson}>
             Export JSON
           </button>
@@ -893,6 +899,22 @@ function App() {
           })}
         </ul>
       </section>
+
+      <footer className="diagnostics-footer" aria-label="Diagnostics and support">
+        <small className="diagnostics-meta">
+          Version <strong>v{APP_VERSION}</strong> · Commit <code>{APP_COMMIT_SHA}</code>
+        </small>
+        <nav className="diagnostics-links" aria-label="Diagnostics links">
+          <a href={BUG_REPORT_URL} target="_blank" rel="noreferrer noopener">
+            Report a bug
+          </a>
+          <a href={QA_DOCS_URL} target="_blank" rel="noreferrer noopener">
+            QA docs
+          </a>
+          <a href="#data-portability">Export JSON</a>
+        </nav>
+      </footer>
+
     </main>
   );
 }
