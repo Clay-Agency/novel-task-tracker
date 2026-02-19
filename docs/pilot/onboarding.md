@@ -16,6 +16,7 @@ This onboarding guide is for pilot participants and facilitators to align on:
 - Feedback interview guide: [`docs/pilot/feedback-questions.md`](./feedback-questions.md)
 - Feedback synthesis template: [`docs/pilot/feedback-synthesis-template.md`](./feedback-synthesis-template.md)
 - Weekly report format: [`docs/pilot/weekly-report-format.md`](./weekly-report-format.md)
+- Consent + data handling notice: [`docs/pilot/consent-data-notice.md`](./consent-data-notice.md)
 
 ## Pilot app link
 - Canonical pilot URL source: [`docs/pilot/pilot-url.md`](./pilot-url.md)
@@ -35,6 +36,7 @@ This onboarding guide is for pilot participants and facilitators to align on:
 - Data is stored **locally in your browser** using `localStorage`.
 - Your tasks stay on the same browser/profile/device unless storage is cleared.
 - Data is not sent to a backend service in this pilot build.
+- Full participant notice: [`docs/pilot/consent-data-notice.md`](./consent-data-notice.md)
 
 ## What to focus on during pilot
 - Is task capture/editing/completion fast and intuitive?

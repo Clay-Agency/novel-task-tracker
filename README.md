@@ -147,6 +147,7 @@ Use these docs for pilot participant onboarding, live walkthroughs, structured f
 - [`docs/pilot/feedback-questions.md`](./docs/pilot/feedback-questions.md)
 - [`docs/pilot/feedback-synthesis-template.md`](./docs/pilot/feedback-synthesis-template.md)
 - [`docs/pilot/weekly-report-format.md`](./docs/pilot/weekly-report-format.md)
+- [`docs/pilot/consent-data-notice.md`](./docs/pilot/consent-data-notice.md)
 
 ## JSON export/import (Issue #40)
 Use **Export JSON** in the Tasks panel to download a versioned snapshot of your task list.
