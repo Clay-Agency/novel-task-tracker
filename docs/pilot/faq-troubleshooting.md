@@ -12,16 +12,21 @@ This guide helps pilot users quickly resolve common setup and usage issues.
 ### Can I safely reset my data?
 Yes. Use one of these options:
 
-1. **In-app reset by deleting tasks**
-   - Reopen the app and delete tasks one by one from the task list.
+1. **In-app reset (recommended for full reset)**
+   - Open the **Tasks** panel and select **Reset app data**.
+   - Confirm the prompt.
+   - The app clears local keys for tasks and theme preference (`novel-task-tracker/tasks`, `novel-task-tracker/theme`) and returns to an empty state.
+
+2. **In-app partial cleanup**
+   - Delete tasks one by one from the task list.
    - Best when you only want to remove some tasks.
 
-2. **Browser storage reset (full local reset for this app)**
+3. **Browser storage reset (manual full reset)**
    - Open browser DevTools → Application/Storage → Local Storage.
-   - Remove `novel-task-tracker/tasks`.
+   - Remove `novel-task-tracker/tasks` and `novel-task-tracker/theme`.
    - Refresh the app.
 
-> Tip: Storage reset is irreversible for this pilot build (no account backup/sync).
+> Tip: Reset is irreversible for this pilot build (no account backup/sync).
 
 ### What happens in Private/Incognito mode?
 - The app may work for the current session, but data usually clears when the private window is closed.

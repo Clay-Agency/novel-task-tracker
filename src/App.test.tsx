@@ -377,6 +377,37 @@ describe('App core UI flows', () => {
     expect(alert).toHaveTextContent(/invalid json file/i);
   });
 
+  it('resets app data after confirmation and clears persisted keys', () => {
+    render(<App />);
+
+    createTask({ title: 'Reset target task' });
+    fireEvent.change(screen.getByLabelText(/^theme$/i), { target: { value: 'dark' } });
+
+    expect(window.localStorage.getItem(TASKS_STORAGE_KEY)).not.toBeNull();
+    expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe('dark');
+
+    const confirmSpy = vi.spyOn(window, 'confirm');
+
+    confirmSpy.mockReturnValueOnce(false);
+    fireEvent.click(screen.getByRole('button', { name: /reset app data/i }));
+    expect(confirmSpy).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('heading', { name: /reset target task/i })).toBeInTheDocument();
+
+    confirmSpy.mockReturnValueOnce(true);
+    fireEvent.click(screen.getByRole('button', { name: /reset app data/i }));
+    expect(confirmSpy).toHaveBeenCalledTimes(2);
+
+    expect(screen.queryByRole('heading', { name: /reset target task/i })).not.toBeInTheDocument();
+    expect(screen.getByText(/no tasks yet. add your first task to get started./i)).toBeInTheDocument();
+    expect(screen.getByText(/app data reset. all local task data and preferences were cleared./i)).toBeInTheDocument();
+    expect(window.localStorage.getItem(TASKS_STORAGE_KEY)).toBeNull();
+    expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBeNull();
+    expect((screen.getByLabelText(/^theme$/i) as HTMLSelectElement).value).toBe('system');
+    expect(document.documentElement.getAttribute('data-theme')).toBeNull();
+
+    confirmSpy.mockRestore();
+  });
+
   it('persists tasks across remounts', () => {
     const { unmount } = render(<App />);
 

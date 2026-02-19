@@ -11,6 +11,7 @@ export const THEME_STORAGE_KEY = 'novel-task-tracker/theme';
 interface StorageLike {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
+  removeItem?: (key: string) => void;
 }
 
 export interface LoadThemePreferenceResult {
@@ -82,6 +83,20 @@ export function persistThemePreference(preference: ThemePreference, storage?: St
 
   try {
     resolvedStorage.setItem(THEME_STORAGE_KEY, preference);
+  } catch {
+    // localStorage quota/security failures should not crash the app
+  }
+}
+
+export function clearThemePreference(storage?: StorageLike | null): void {
+  const resolvedStorage = resolveStorage(storage);
+
+  if (!resolvedStorage || typeof resolvedStorage.removeItem !== 'function') {
+    return;
+  }
+
+  try {
+    resolvedStorage.removeItem(THEME_STORAGE_KEY);
   } catch {
     // localStorage quota/security failures should not crash the app
   }

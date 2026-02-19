@@ -420,6 +420,7 @@ function migratePersistedState(rawPersistedState: unknown): LoadTasksStateResult
 interface StorageLike {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
+  removeItem?: (key: string) => void;
 }
 
 function resolveStorage(storage?: StorageLike | null): StorageLike | null {
@@ -477,6 +478,20 @@ export function persistTasksState(state: TasksState, storage?: StorageLike | nul
         payload: normalizedState
       })
     );
+  } catch {
+    // localStorage quota/security failures should not crash the app
+  }
+}
+
+export function clearPersistedTasksState(storage?: StorageLike | null): void {
+  const resolvedStorage = resolveStorage(storage);
+
+  if (!resolvedStorage || typeof resolvedStorage.removeItem !== 'function') {
+    return;
+  }
+
+  try {
+    resolvedStorage.removeItem(TASKS_STORAGE_KEY);
   } catch {
     // localStorage quota/security failures should not crash the app
   }
