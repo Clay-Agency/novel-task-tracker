@@ -49,6 +49,17 @@ Gate must pass before merge:
 - UI integration coverage for CRUD + search/filter/sort + persistence
 - Deterministic test behavior
 
+
+## Filing issues
+Use the GitHub issue templates in `.github/ISSUE_TEMPLATE/` so reports are actionable:
+- **Bug report**: product defects (include environment, repro, expected/actual, severity)
+- **QA finding**: validation findings mapped to checklist items in `docs/qa/`
+- **Feature request**: proposed enhancements with problem statement + success criteria
+
+When filing bugs or QA findings, link the relevant checklist section when applicable:
+- `docs/qa/responsive-qa-checklist.md`
+- `docs/qa/pilot-readiness-cross-browser-plan.md`
+
 ## Branch / PR workflow
 1. Create a branch from `main` using `feat/issue-<number>-<summary>`.
 2. Keep commits small and scoped to one issue.

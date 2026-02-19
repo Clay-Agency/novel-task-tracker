@@ -9,6 +9,17 @@ Thanks for contributing to **novel-task-tracker**.
 3. Open a PR that links the issue (example: `Closes #14`).
 4. Follow the **2-stage review process** below before requesting merge.
 
+
+## Where to file what
+Use the issue templates under `.github/ISSUE_TEMPLATE/`:
+- **Bug report** (`bug-report.md`): defects with repro, expected/actual, environment, severity
+- **QA finding** (`qa-finding.md`): findings mapped to checklist docs in `docs/qa/`
+- **Feature request** (`feature-request.md`): enhancement proposals with problem + success criteria
+
+For QA findings (and QA-discovered bugs), include a direct link to the relevant checklist section:
+- `docs/qa/responsive-qa-checklist.md`
+- `docs/qa/pilot-readiness-cross-browser-plan.md`
+
 ## 2-stage review process (required)
 
 ### Stage 1 — Self-review (author, xhigh reasoning)
