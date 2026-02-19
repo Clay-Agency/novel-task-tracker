@@ -10,6 +10,8 @@ This onboarding guide is for pilot participants and facilitators to align on:
 - and current pilot limitations.
 
 ## Related pilot docs
+- Pilot kickoff checklist: [`docs/pilot/kickoff-checklist.md`](./kickoff-checklist.md)
+- Facilitator runbook: [`docs/pilot/facilitator-guide.md`](./facilitator-guide.md)
 - FAQ + troubleshooting: [`docs/pilot/faq-troubleshooting.md`](./faq-troubleshooting.md)
 - Feedback interview guide: [`docs/pilot/feedback-questions.md`](./feedback-questions.md)
 - Feedback synthesis template: [`docs/pilot/feedback-synthesis-template.md`](./feedback-synthesis-template.md)
