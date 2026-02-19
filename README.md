@@ -135,9 +135,11 @@ Use the pilot gate checklist and browser/device validation plan at [`docs/qa/pil
 ## Accessibility baseline manual check (Issue #35)
 Use the quick keyboard/ARIA smoke pass at [`docs/qa/accessibility-baseline-check.md`](./docs/qa/accessibility-baseline-check.md) before merging UI changes.
 
-## Pilot onboarding packet + demo script (Issue #30)
-Use these docs for pilot participant onboarding, live walkthroughs, and structured feedback capture:
+## Pilot onboarding + feedback operations (Issues #30, #41)
+Use these docs for pilot participant onboarding, live walkthroughs, structured feedback capture, and weekly synthesis/reporting:
 - [`docs/pilot/onboarding.md`](./docs/pilot/onboarding.md)
 - [`docs/pilot/faq-troubleshooting.md`](./docs/pilot/faq-troubleshooting.md)
 - [`docs/pilot/demo-script.md`](./docs/pilot/demo-script.md)
 - [`docs/pilot/feedback-questions.md`](./docs/pilot/feedback-questions.md)
+- [`docs/pilot/feedback-synthesis-template.md`](./docs/pilot/feedback-synthesis-template.md)
+- [`docs/pilot/weekly-report-format.md`](./docs/pilot/weekly-report-format.md)
