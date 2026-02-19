@@ -57,3 +57,28 @@ Use this short triage flow when the workflow fails.
   - Repository notification settings (watchers/maintainers)
 
 Owners should review failures directly and decide follow-up action case-by-case.
+
+## Ownership and rotation policy (pilot default)
+
+To keep pilot operations low-noise and predictable, use a single **weekly CI triage owner (DRI)**.
+
+### Policy
+- One maintainer is the CI triage owner each week (Monday 00:00 UTC → Sunday 23:59 UTC).
+- Rotation is lightweight: update the next owner during normal weekly planning.
+- Only the weekly owner is expected to actively triage scheduled maintenance failures.
+
+### Triage SLA and escalation
+- **Acknowledge** a failing scheduled run within 24 hours on business days.
+- If fix is straightforward, owner ships a PR and links it from the failure thread/issue.
+- If not fixable quickly, owner opens (or updates) a tracking issue with context + next step.
+- If the owner is unavailable, hand off to the next maintainer in rotation.
+
+### Low-noise operating rules
+- Keep current behavior: **no automatic issue/PR creation**.
+- Prefer one canonical tracking issue per failure class instead of opening duplicates.
+- Use GitHub Actions visibility + existing maintainer notifications as primary signal.
+
+### Rotation options considered (for future revisit)
+1. **Single fixed owner** (lowest coordination, higher bus-factor risk)
+2. **Weekly rotating owner (current default)** (balanced load, still low overhead)
+3. **Formal on-call window** (strong coverage, higher process/noise cost)
