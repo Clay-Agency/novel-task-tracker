@@ -304,18 +304,24 @@ function App() {
         <fieldset className="fieldset-reset">
           <legend className="sr-only">Now queue filters</legend>
           <div className="controls" role="group" aria-describedby="now-queue-hint">
-            <label htmlFor="now-time">Available time</label>
-            <select id="now-time" value={availableTimePreset} onChange={(event) => setAvailableTimePreset(event.target.value)}>
-              {NOW_TIME_PRESETS.map((minutes) => (
-                <option key={minutes} value={String(minutes)}>
-                  {minutes} min
-                </option>
-              ))}
-              <option value="custom">Custom</option>
-            </select>
+            <div className="control">
+              <label htmlFor="now-time">Available time</label>
+              <select
+                id="now-time"
+                value={availableTimePreset}
+                onChange={(event) => setAvailableTimePreset(event.target.value)}
+              >
+                {NOW_TIME_PRESETS.map((minutes) => (
+                  <option key={minutes} value={String(minutes)}>
+                    {minutes} min
+                  </option>
+                ))}
+                <option value="custom">Custom</option>
+              </select>
+            </div>
 
             {availableTimePreset === 'custom' ? (
-              <>
+              <div className="control">
                 <label htmlFor="now-time-custom">Custom minutes</label>
                 <input
                   id="now-time-custom"
@@ -324,27 +330,39 @@ function App() {
                   value={availableTimeCustom}
                   onChange={(event) => setAvailableTimeCustom(event.target.value)}
                 />
-              </>
+              </div>
             ) : null}
 
-            <label htmlFor="now-energy">Current energy</label>
-            <select id="now-energy" value={nowEnergy} onChange={(event) => setNowEnergy(event.target.value as TaskEnergy)}>
-              {ENERGY_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+            <div className="control">
+              <label htmlFor="now-energy">Current energy</label>
+              <select
+                id="now-energy"
+                value={nowEnergy}
+                onChange={(event) => setNowEnergy(event.target.value as TaskEnergy)}
+              >
+                {ENERGY_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-            <label htmlFor="now-context">Context (optional)</label>
-            <select id="now-context" value={nowContext} onChange={(event) => setNowContext(event.target.value as TaskContext | '')}>
-              <option value="">Any context</option>
-              {CONTEXT_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+            <div className="control">
+              <label htmlFor="now-context">Context (optional)</label>
+              <select
+                id="now-context"
+                value={nowContext}
+                onChange={(event) => setNowContext(event.target.value as TaskContext | '')}
+              >
+                <option value="">Any context</option>
+                {CONTEXT_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </fieldset>
 
@@ -428,7 +446,7 @@ function App() {
           <fieldset className="fieldset-reset">
             <legend className="sr-only">Optional task metadata</legend>
             <div className="controls">
-              <div>
+              <div className="control">
                 <label htmlFor="task-due-date">Due date (optional)</label>
                 <input
                   id="task-due-date"
@@ -438,15 +456,19 @@ function App() {
                 />
               </div>
 
-              <div>
+              <div className="control">
                 <label htmlFor="task-priority">Priority</label>
-                <select id="task-priority" value={priority} onChange={(event) => setPriority(event.target.value as typeof priority)}>
+                <select
+                  id="task-priority"
+                  value={priority}
+                  onChange={(event) => setPriority(event.target.value as typeof priority)}
+                >
                   <option value={TASK_PRIORITY.NORMAL}>Normal</option>
                   <option value={TASK_PRIORITY.HIGH}>High</option>
                 </select>
               </div>
 
-              <div>
+              <div className="control">
                 <label htmlFor="task-duration">Estimated duration</label>
                 <select
                   id="task-duration"
@@ -462,9 +484,13 @@ function App() {
                 </select>
               </div>
 
-              <div>
+              <div className="control">
                 <label htmlFor="task-energy">Energy required</label>
-                <select id="task-energy" value={energy} onChange={(event) => setEnergy(event.target.value as TaskEnergy | '')}>
+                <select
+                  id="task-energy"
+                  value={energy}
+                  onChange={(event) => setEnergy(event.target.value as TaskEnergy | '')}
+                >
                   <option value="">Not set</option>
                   {ENERGY_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -474,9 +500,13 @@ function App() {
                 </select>
               </div>
 
-              <div>
+              <div className="control">
                 <label htmlFor="task-context">Context</label>
-                <select id="task-context" value={context} onChange={(event) => setContext(event.target.value as TaskContext | '')}>
+                <select
+                  id="task-context"
+                  value={context}
+                  onChange={(event) => setContext(event.target.value as TaskContext | '')}
+                >
                   <option value="">No context</option>
                   {CONTEXT_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -503,32 +533,42 @@ function App() {
         <fieldset className="fieldset-reset">
           <legend className="sr-only">Task list filters</legend>
           <div className="controls">
-            <label htmlFor="search-tasks">Search</label>
-            <input
-              id="search-tasks"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search title or description"
-            />
+            <div className="control">
+              <label htmlFor="search-tasks">Search</label>
+              <input
+                id="search-tasks"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search title or description"
+              />
+            </div>
 
-            <label htmlFor="status-filter">Status</label>
-            <select
-              id="status-filter"
-              value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}
-            >
-              <option value={STATUS_FILTERS.ALL}>All</option>
-              <option value={STATUS_FILTERS.OPEN}>Open</option>
-              <option value={STATUS_FILTERS.COMPLETED}>Completed</option>
-            </select>
+            <div className="control">
+              <label htmlFor="status-filter">Status</label>
+              <select
+                id="status-filter"
+                value={statusFilter}
+                onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}
+              >
+                <option value={STATUS_FILTERS.ALL}>All</option>
+                <option value={STATUS_FILTERS.OPEN}>Open</option>
+                <option value={STATUS_FILTERS.COMPLETED}>Completed</option>
+              </select>
+            </div>
 
-            <label htmlFor="sort-by">Sort</label>
-            <select id="sort-by" value={sortBy} onChange={(event) => setSortBy(event.target.value as SortOption)}>
-              <option value={SORT_OPTIONS.UPDATED_DESC}>Recently updated</option>
-              <option value={SORT_OPTIONS.CREATED_DESC}>Newest first</option>
-              <option value={SORT_OPTIONS.CREATED_ASC}>Oldest first</option>
-              <option value={SORT_OPTIONS.TITLE_ASC}>Title A-Z</option>
-            </select>
+            <div className="control">
+              <label htmlFor="sort-by">Sort</label>
+              <select
+                id="sort-by"
+                value={sortBy}
+                onChange={(event) => setSortBy(event.target.value as SortOption)}
+              >
+                <option value={SORT_OPTIONS.UPDATED_DESC}>Recently updated</option>
+                <option value={SORT_OPTIONS.CREATED_DESC}>Newest first</option>
+                <option value={SORT_OPTIONS.CREATED_ASC}>Oldest first</option>
+                <option value={SORT_OPTIONS.TITLE_ASC}>Title A-Z</option>
+              </select>
+            </div>
           </div>
         </fieldset>
 
@@ -572,7 +612,7 @@ function App() {
                     <fieldset className="fieldset-reset">
                       <legend className="sr-only">Edit task metadata</legend>
                       <div className="controls">
-                        <div>
+                        <div className="control">
                           <label htmlFor={`edit-due-date-${task.id}`}>Edit due date</label>
                           <input
                             id={`edit-due-date-${task.id}`}
@@ -582,7 +622,7 @@ function App() {
                           />
                         </div>
 
-                        <div>
+                        <div className="control">
                           <label htmlFor={`edit-priority-${task.id}`}>Edit priority</label>
                           <select
                             id={`edit-priority-${task.id}`}
@@ -594,7 +634,7 @@ function App() {
                           </select>
                         </div>
 
-                        <div>
+                        <div className="control">
                           <label htmlFor={`edit-duration-${task.id}`}>Edit estimated duration</label>
                           <select
                             id={`edit-duration-${task.id}`}
@@ -610,7 +650,7 @@ function App() {
                           </select>
                         </div>
 
-                        <div>
+                        <div className="control">
                           <label htmlFor={`edit-energy-${task.id}`}>Edit energy required</label>
                           <select
                             id={`edit-energy-${task.id}`}
@@ -626,7 +666,7 @@ function App() {
                           </select>
                         </div>
 
-                        <div>
+                        <div className="control">
                           <label htmlFor={`edit-context-${task.id}`}>Edit context</label>
                           <select
                             id={`edit-context-${task.id}`}
