@@ -17,6 +17,7 @@ This onboarding guide is for pilot participants and facilitators to align on:
 - Feedback synthesis template: [`docs/pilot/feedback-synthesis-template.md`](./feedback-synthesis-template.md)
 - Weekly report format: [`docs/pilot/weekly-report-format.md`](./weekly-report-format.md)
 - Consent + data handling notice: [`docs/pilot/consent-data-notice.md`](./consent-data-notice.md)
+- Recruitment criteria + outreach templates: [`docs/pilot/recruitment-criteria-outreach.md`](./recruitment-criteria-outreach.md)
 
 ## Pilot app link
 - Canonical pilot URL source: [`docs/pilot/pilot-url.md`](./pilot-url.md)
