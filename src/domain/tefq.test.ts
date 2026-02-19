@@ -1,21 +1,22 @@
 import { describe, expect, it } from 'vitest';
-import { TASK_ENERGY, TASK_PRIORITY, TASK_STATUS } from './task';
+import { TASK_ENERGY, TASK_PRIORITY, TASK_STATUS, type Task } from './task';
 import { buildNowQueue } from './tefq';
 
-function makeTask(overrides = {}) {
+function makeTask(overrides: Partial<Task> = {}): Task {
   return {
-    id: 'id' in overrides ? overrides.id : 'task-1',
-    title: 'title' in overrides ? overrides.title : 'Task',
-    status: 'status' in overrides ? overrides.status : TASK_STATUS.OPEN,
-    createdAt: 'createdAt' in overrides ? overrides.createdAt : '2026-02-19T00:00:00.000Z',
-    updatedAt: 'updatedAt' in overrides ? overrides.updatedAt : '2026-02-19T00:00:00.000Z',
+    id: 'id' in overrides ? (overrides.id as string) : 'task-1',
+    title: 'title' in overrides ? (overrides.title as string) : 'Task',
+    status: 'status' in overrides ? (overrides.status as Task['status']) : TASK_STATUS.OPEN,
+    createdAt: 'createdAt' in overrides ? (overrides.createdAt as string) : '2026-02-19T00:00:00.000Z',
+    updatedAt: 'updatedAt' in overrides ? (overrides.updatedAt as string) : '2026-02-19T00:00:00.000Z',
     description: null,
     completedAt: null,
-    dueDate: 'dueDate' in overrides ? overrides.dueDate : null,
-    priority: 'priority' in overrides ? overrides.priority : TASK_PRIORITY.NORMAL,
-    estimatedDurationMin: 'estimatedDurationMin' in overrides ? overrides.estimatedDurationMin : 30,
-    energy: 'energy' in overrides ? overrides.energy : TASK_ENERGY.MEDIUM,
-    context: 'context' in overrides ? overrides.context : null
+    dueDate: 'dueDate' in overrides ? (overrides.dueDate ?? null) : null,
+    priority: 'priority' in overrides ? (overrides.priority as Task['priority']) : TASK_PRIORITY.NORMAL,
+    estimatedDurationMin:
+      'estimatedDurationMin' in overrides ? (overrides.estimatedDurationMin ?? null) : 30,
+    energy: 'energy' in overrides ? (overrides.energy ?? null) : TASK_ENERGY.MEDIUM,
+    context: 'context' in overrides ? (overrides.context ?? null) : null
   };
 }
 
@@ -73,7 +74,6 @@ describe('buildNowQueue', () => {
     expect(queue.items[0].task.id).toBe('eligible');
   });
 
-
   it('scores due windows with non-negative boundaries and keeps overdue neutral', () => {
     const now = '2026-02-19T00:00:00.000Z';
     const tasks = [
@@ -104,6 +104,7 @@ describe('buildNowQueue', () => {
     expect(byId.overdue.reasons).not.toContain('due within 24h');
     expect(byId.overdue.reasons).not.toContain('due within 3 days');
   });
+
   it('uses fallback block for non-matching context when context filter is set', () => {
     const tasks = [
       makeTask({ id: 'admin-task', context: 'admin' }),

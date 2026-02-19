@@ -3,12 +3,19 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import App from './App';
 import { TASKS_STORAGE_KEY, TASKS_STORAGE_VERSION } from './state/tasks';
 
-function createMockStorage() {
-  const storage = new Map();
+interface MockStorage {
+  getItem: (key: string) => string | null;
+  setItem: (key: string, value: string) => void;
+  removeItem: (key: string) => void;
+  clear: () => void;
+}
+
+function createMockStorage(): MockStorage {
+  const storage = new Map<string, string>();
 
   return {
     getItem(key) {
-      return storage.has(key) ? storage.get(key) : null;
+      return storage.has(key) ? storage.get(key)! : null;
     },
     setItem(key, value) {
       storage.set(key, String(value));
@@ -22,7 +29,15 @@ function createMockStorage() {
   };
 }
 
-function setCreateForm({ title, description, dueDate, priority, duration, energy, context } = {}) {
+function setCreateForm({ title, description, dueDate, priority, duration, energy, context } = {} as {
+  title?: string;
+  description?: string;
+  dueDate?: string;
+  priority?: string;
+  duration?: string;
+  energy?: string;
+  context?: string;
+}): void {
   if (title !== undefined) {
     fireEvent.change(screen.getByLabelText(/^title$/i), { target: { value: title } });
   }
@@ -54,20 +69,28 @@ function setCreateForm({ title, description, dueDate, priority, duration, energy
   }
 }
 
-function createTask({ title, description, dueDate, priority, duration, energy, context } = {}) {
+function createTask({ title, description, dueDate, priority, duration, energy, context } = {} as {
+  title?: string;
+  description?: string;
+  dueDate?: string;
+  priority?: string;
+  duration?: string;
+  energy?: string;
+  context?: string;
+}): void {
   setCreateForm({ title, description, dueDate, priority, duration, energy, context });
   fireEvent.click(screen.getByRole('button', { name: /add task/i }));
 }
 
-function getVisibleTaskTitles() {
+function getVisibleTaskTitles(): string[] {
   const taskList = screen.getByRole('list', { name: /task list/i });
   return within(taskList)
     .getAllByRole('heading', { level: 3 })
-    .map((node) => node.textContent);
+    .map((node) => node.textContent ?? '');
 }
 
 describe('App core UI flows', () => {
-  let originalLocalStorage;
+  let originalLocalStorage: typeof globalThis.localStorage | undefined;
 
   beforeEach(() => {
     vi.useFakeTimers();
@@ -207,7 +230,9 @@ describe('App core UI flows', () => {
 
     createTask({ title: 'Persisted task', description: 'Keep between reloads', duration: '30', energy: 'medium' });
 
-    const persisted = JSON.parse(window.localStorage.getItem(TASKS_STORAGE_KEY));
+    const rawPersisted = window.localStorage.getItem(TASKS_STORAGE_KEY);
+    expect(rawPersisted).not.toBeNull();
+    const persisted = JSON.parse(rawPersisted ?? '{}') as { version: number; payload: { tasks: unknown[] } };
     expect(persisted.version).toBe(TASKS_STORAGE_VERSION);
     expect(persisted.payload.tasks).toHaveLength(1);
 
@@ -232,6 +257,6 @@ describe('App core UI flows', () => {
 
     render(<App />);
 
-    expect(JSON.parse(window.localStorage.getItem(TASKS_STORAGE_KEY))).toEqual(futurePayload);
+    expect(JSON.parse(window.localStorage.getItem(TASKS_STORAGE_KEY) ?? '{}')).toEqual(futurePayload);
   });
 });

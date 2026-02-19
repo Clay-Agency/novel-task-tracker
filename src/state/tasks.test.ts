@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import { TASK_ENERGY, TASK_PRIORITY, TASK_STATUS, createTask } from '../domain/task';
 import {
   TASKS_STORAGE_KEY,
@@ -178,12 +179,12 @@ describe('task actions and reducer', () => {
 
 describe('task persistence', () => {
   const mockStorage = () => {
-    const storage = new Map();
+    const storage = new Map<string, string>();
     return {
-      getItem(key) {
-        return storage.has(key) ? storage.get(key) : null;
+      getItem(key: string): string | null {
+        return storage.has(key) ? storage.get(key)! : null;
       },
-      setItem(key, value) {
+      setItem(key: string, value: string): void {
         storage.set(key, value);
       }
     };
@@ -212,7 +213,7 @@ describe('task persistence', () => {
 
     persistTasksState(state, storage);
 
-    expect(JSON.parse(storage.getItem(TASKS_STORAGE_KEY))).toEqual({
+    expect(JSON.parse(storage.getItem(TASKS_STORAGE_KEY) ?? '{}')).toEqual({
       version: TASKS_STORAGE_VERSION,
       payload: state
     });
@@ -342,7 +343,10 @@ describe('task persistence', () => {
     if (originalDescriptor) {
       Object.defineProperty(globalThis, 'localStorage', originalDescriptor);
     } else {
-      delete globalThis.localStorage;
+      Object.defineProperty(globalThis, 'localStorage', {
+        configurable: true,
+        value: undefined
+      });
     }
   });
 });

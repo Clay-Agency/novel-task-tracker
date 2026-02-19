@@ -23,11 +23,27 @@ module.exports = {
   },
   overrides: [
     {
-      files: ['**/*.test.{js,jsx}', 'src/test/**/*.js'],
+      files: ['**/*.{ts,tsx}'],
+      parser: '@typescript-eslint/parser',
+      plugins: ['@typescript-eslint'],
+      extends: ['plugin:@typescript-eslint/recommended'],
+      parserOptions: {
+        ecmaVersion: 'latest',
+        sourceType: 'module',
+        ecmaFeatures: {
+          jsx: true
+        }
+      }
+    },
+    {
+      files: ['**/*.test.{js,jsx,ts,tsx}', 'src/test/**/*.{js,ts}'],
       globals: {
         describe: 'readonly',
         it: 'readonly',
-        expect: 'readonly'
+        expect: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
+        vi: 'readonly'
       }
     }
   ],

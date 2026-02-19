@@ -1,9 +1,29 @@
-import { TASK_ENERGY, TASK_PRIORITY, TASK_STATUS } from './task';
+import { TASK_ENERGY, TASK_PRIORITY, TASK_STATUS, type Task, type TaskEnergy, type TaskContext } from './task';
 
-const ENERGY_ORDER = [TASK_ENERGY.LOW, TASK_ENERGY.MEDIUM, TASK_ENERGY.HIGH];
+const ENERGY_ORDER: TaskEnergy[] = [TASK_ENERGY.LOW, TASK_ENERGY.MEDIUM, TASK_ENERGY.HIGH];
 
-function getEnergyDistance(a, b) {
-  const aIndex = ENERGY_ORDER.indexOf(a);
+export interface RankedTask {
+  task: Task;
+  score: number;
+  reasons: string[];
+}
+
+export interface BuildNowQueueOptions {
+  availableTimeMin?: number;
+  currentEnergy?: TaskEnergy;
+  contextFilter?: TaskContext | null;
+  now?: string;
+  limit?: number;
+}
+
+export interface NowQueueResult {
+  eligibleCount: number;
+  items: RankedTask[];
+  fallbackItems: RankedTask[];
+}
+
+function getEnergyDistance(a: TaskEnergy | null, b: TaskEnergy): number {
+  const aIndex = ENERGY_ORDER.indexOf(a as TaskEnergy);
   const bIndex = ENERGY_ORDER.indexOf(b);
 
   if (aIndex === -1 || bIndex === -1) {
@@ -13,7 +33,7 @@ function getEnergyDistance(a, b) {
   return Math.abs(aIndex - bIndex);
 }
 
-function dueScore(dueDate, nowMs) {
+function dueScore(dueDate: string | null, nowMs: number): { score: number; reason: string | null } {
   if (!dueDate) {
     return { score: 0, reason: null };
   }
@@ -37,7 +57,7 @@ function dueScore(dueDate, nowMs) {
   return { score: 0, reason: null };
 }
 
-function compareDueDate(a, b) {
+function compareDueDate(a: Task, b: Task): number {
   if (a.dueDate && b.dueDate) {
     const aMs = Date.parse(a.dueDate);
     const bMs = Date.parse(b.dueDate);
@@ -58,20 +78,32 @@ function compareDueDate(a, b) {
   return 0;
 }
 
-function comparePriority(a, b) {
+function comparePriority(a: Task, b: Task): number {
   const aPriority = a.priority === TASK_PRIORITY.HIGH ? 1 : 0;
   const bPriority = b.priority === TASK_PRIORITY.HIGH ? 1 : 0;
   return bPriority - aPriority;
 }
 
-function compareCreatedAt(a, b) {
+function compareCreatedAt(a: Task, b: Task): number {
   return Date.parse(a.createdAt) - Date.parse(b.createdAt);
 }
 
-function createReasons({ task, availableTimeMin, currentEnergy, contextFilter, due }) {
-  const reasons = [];
+function createReasons({
+  task,
+  availableTimeMin,
+  currentEnergy,
+  contextFilter,
+  due
+}: {
+  task: Task;
+  availableTimeMin: number;
+  currentEnergy: TaskEnergy;
+  contextFilter: TaskContext | null;
+  due: { score: number; reason: string | null };
+}): string[] {
+  const reasons: string[] = [];
 
-  if (task.estimatedDurationMin <= availableTimeMin) {
+  if ((task.estimatedDurationMin ?? Number.POSITIVE_INFINITY) <= availableTimeMin) {
     reasons.push(`fits ${availableTimeMin}m`);
   } else {
     reasons.push(`stretch: ${task.estimatedDurationMin}m task`);
@@ -105,10 +137,22 @@ function createReasons({ task, availableTimeMin, currentEnergy, contextFilter, d
   return reasons;
 }
 
-function rankTask({ task, availableTimeMin, currentEnergy, contextFilter, nowMs }) {
+function rankTask({
+  task,
+  availableTimeMin,
+  currentEnergy,
+  contextFilter,
+  nowMs
+}: {
+  task: Task;
+  availableTimeMin: number;
+  currentEnergy: TaskEnergy;
+  contextFilter: TaskContext | null;
+  nowMs: number;
+}): RankedTask {
   let score = 0;
 
-  if (task.estimatedDurationMin <= availableTimeMin) {
+  if ((task.estimatedDurationMin ?? Number.POSITIVE_INFINITY) <= availableTimeMin) {
     score += 3;
   } else {
     score -= 2;
@@ -135,7 +179,7 @@ function rankTask({ task, availableTimeMin, currentEnergy, contextFilter, nowMs 
   };
 }
 
-function sortRankedItems(a, b) {
+function sortRankedItems(a: RankedTask, b: RankedTask): number {
   if (a.score !== b.score) {
     return b.score - a.score;
   }
@@ -153,7 +197,7 @@ function sortRankedItems(a, b) {
   return compareCreatedAt(a.task, b.task);
 }
 
-function isPrimaryEligible(task) {
+function isPrimaryEligible(task: Task): task is Task & { estimatedDurationMin: number; energy: TaskEnergy } {
   return (
     task.status !== TASK_STATUS.COMPLETED &&
     typeof task.estimatedDurationMin === 'number' &&
@@ -163,9 +207,15 @@ function isPrimaryEligible(task) {
 }
 
 export function buildNowQueue(
-  tasks,
-  { availableTimeMin = 30, currentEnergy = TASK_ENERGY.MEDIUM, contextFilter = null, now = new Date().toISOString(), limit = 5 } = {}
-) {
+  tasks: Task[],
+  {
+    availableTimeMin = 30,
+    currentEnergy = TASK_ENERGY.MEDIUM,
+    contextFilter = null,
+    now = new Date().toISOString(),
+    limit = 5
+  }: BuildNowQueueOptions = {}
+): NowQueueResult {
   const nowMs = Date.parse(now);
 
   const eligible = tasks.filter(isPrimaryEligible);
