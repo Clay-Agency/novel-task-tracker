@@ -12,6 +12,7 @@ import './App.css';
 import { TASK_CONTEXT, TASK_ENERGY, TASK_PRIORITY, TASK_STATUS, type Task, type TaskContext, type TaskEnergy } from './domain/task';
 import { buildNowQueue } from './domain/tefq';
 import {
+  clearPersistedTasksState,
   completeTaskAction,
   createTaskAction,
   deleteTaskAction,
@@ -26,6 +27,7 @@ import {
 } from './state/tasks';
 import {
   applyThemePreference,
+  clearThemePreference,
   loadThemePreferenceResult,
   persistThemePreference,
   THEME_PREFERENCE,
@@ -69,6 +71,8 @@ const BUG_REPORT_URL = 'https://github.com/Clay-Agency/novel-task-tracker/issues
 const QA_DOCS_URL = 'https://github.com/Clay-Agency/novel-task-tracker/tree/main/docs/qa';
 const APP_VERSION = __APP_VERSION__;
 const APP_COMMIT_SHA = __APP_COMMIT_SHA__;
+const RESET_CONFIRM_MESSAGE =
+  'Reset app data? This will permanently delete all tasks and local preferences for this browser profile.';
 
 function normalizeDescription(description: string): string | null {
   const trimmed = description.trim();
@@ -198,6 +202,7 @@ function App() {
   const [nowEnergy, setNowEnergy] = useState<TaskEnergy>(TASK_ENERGY.MEDIUM);
   const [nowContext, setNowContext] = useState<TaskContext | ''>('');
   const [announceMessage, setAnnounceMessage] = useState('');
+  const [resetMessage, setResetMessage] = useState('');
 
   const createTitleInputRef = useRef<HTMLInputElement | null>(null);
   const editTitleInputRef = useRef<HTMLInputElement | null>(null);
@@ -277,6 +282,7 @@ function App() {
       setEnergy('');
       setContext('');
       setCreateError('');
+      setResetMessage('');
       setAnnounceMessage('Task added.');
       createTitleInputRef.current?.focus();
     } catch (error: unknown) {
@@ -294,6 +300,7 @@ function App() {
     setEditEnergy(task.energy ?? '');
     setEditContext(task.context ?? '');
     setEditError('');
+    setResetMessage('');
     setAnnounceMessage(`Editing ${task.title}.`);
   }
 
@@ -327,6 +334,7 @@ function App() {
         })
       );
       cancelEdit(false);
+      setResetMessage('');
       setAnnounceMessage('Task updated.');
     } catch (error: unknown) {
       setEditError(getErrorMessage(error));
@@ -337,11 +345,13 @@ function App() {
     dispatch(
       task.status === TASK_STATUS.COMPLETED ? reopenTaskAction({ id: task.id }) : completeTaskAction({ id: task.id })
     );
+    setResetMessage('');
     setAnnounceMessage(task.status === TASK_STATUS.COMPLETED ? 'Task reopened.' : 'Task marked completed.');
   }
 
   function deleteTask(taskId: string): void {
     dispatch(deleteTaskAction({ id: taskId }));
+    setResetMessage('');
     setAnnounceMessage('Task deleted.');
   }
 
@@ -360,6 +370,7 @@ function App() {
       URL.revokeObjectURL(url);
 
       setImportError('');
+      setResetMessage('');
       setAnnounceMessage(`Exported ${state.tasks.length} ${state.tasks.length === 1 ? 'task' : 'tasks'} as JSON.`);
     } catch {
       setImportError('Unable to export tasks JSON.');
@@ -382,6 +393,7 @@ function App() {
       setCreateError('');
       setEditError('');
       setImportError('');
+      setResetMessage('');
       setAnnounceMessage(`Imported ${importedTasks.length} ${importedTasks.length === 1 ? 'task' : 'tasks'} from JSON.`);
     } catch (error: unknown) {
       setImportError(getErrorMessage(error));
@@ -400,6 +412,45 @@ function App() {
       cancelEdit();
     }
   }
+
+  function handleResetAppData(): void {
+    const shouldReset = typeof window.confirm === 'function' ? window.confirm(RESET_CONFIRM_MESSAGE) : true;
+
+    if (!shouldReset) {
+      setAnnounceMessage('Reset cancelled.');
+      return;
+    }
+
+    skipInitialPersistRef.current = true;
+    skipInitialThemePersistRef.current = true;
+    clearPersistedTasksState();
+    clearThemePreference();
+    dispatch(importTasksAction({ tasks: [] }));
+    cancelEdit(false);
+
+    setThemePreference(THEME_PREFERENCE.SYSTEM);
+    setTitle('');
+    setDescription('');
+    setDueDate('');
+    setPriority(TASK_PRIORITY.NORMAL);
+    setEstimatedDurationMin('');
+    setEnergy('');
+    setContext('');
+    setCreateError('');
+    setEditError('');
+    setImportError('');
+    setQuery('');
+    setStatusFilter(STATUS_FILTERS.ALL);
+    setSortBy(SORT_OPTIONS.UPDATED_DESC);
+    setAvailableTimePreset('30');
+    setAvailableTimeCustom('');
+    setNowEnergy(TASK_ENERGY.MEDIUM);
+    setNowContext('');
+    setResetMessage('App data reset. All local task data and preferences were cleared.');
+    setAnnounceMessage('App data reset.');
+    createTitleInputRef.current?.focus();
+  }
+
 
   return (
     <main className="app">
@@ -706,6 +757,9 @@ function App() {
           <button type="button" className="secondary" onClick={openImportTasksPicker}>
             Import JSON
           </button>
+          <button type="button" className="danger" onClick={handleResetAppData}>
+            Reset app data
+          </button>
           <input
             ref={importFileInputRef}
             type="file"
@@ -720,6 +774,12 @@ function App() {
         {importError ? (
           <p className="error" role="alert">
             {importError}
+          </p>
+        ) : null}
+
+        {resetMessage ? (
+          <p className="empty-state" role="status">
+            {resetMessage}
           </p>
         ) : null}
 

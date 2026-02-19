@@ -111,6 +111,34 @@ test('supports core task lifecycle and persistence across reload', async ({ page
   await expect(taskList.getByRole('heading', { name: 'Persistent smoke task' })).toHaveCount(0);
 });
 
+test('resets app data from in-app action after confirmation', async ({ page }) => {
+  await openWithFixedClock(page);
+
+  await createTask(page, { title: 'Reset me from e2e' });
+  await page.getByLabel('Theme').selectOption('Dark');
+
+  page.once('dialog', async (dialog) => {
+    expect(dialog.type()).toBe('confirm');
+    expect(dialog.message()).toContain('Reset app data?');
+    await dialog.accept();
+  });
+
+  await page.getByRole('button', { name: 'Reset app data' }).click();
+
+  const taskList = page.getByRole('list', { name: 'Task list' });
+  await expect(taskList.getByRole('heading', { name: 'Reset me from e2e' })).toHaveCount(0);
+  await expect(page.getByText('No tasks yet. Add your first task to get started.')).toBeVisible();
+  await expect(page.getByText('App data reset. All local task data and preferences were cleared.')).toBeVisible();
+
+  const storageSnapshot = await page.evaluate(() => ({
+    tasks: window.localStorage.getItem('novel-task-tracker/tasks'),
+    theme: window.localStorage.getItem('novel-task-tracker/theme')
+  }));
+
+  expect(storageSnapshot.tasks).toBeNull();
+  expect(storageSnapshot.theme).toBeNull();
+});
+
 test('supports search, status filtering, and title sorting', async ({ page }) => {
   await openWithFixedClock(page);
 
