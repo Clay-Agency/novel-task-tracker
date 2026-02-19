@@ -1,15 +1,90 @@
 :root {
-  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  color-scheme: light dark;
+  font-family: 'SF Pro Text', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-  color: #111;
-  background-color: #f8fafc;
+
+  --bg-base: #edf3ff;
+  --bg-secondary: #f8fbff;
+  --bg-radial: rgba(255, 255, 255, 0.72);
+  --text-primary: #12213a;
+  --text-secondary: #3d4f6a;
+  --text-muted: #5f7391;
+
+  --glass-surface: rgba(255, 255, 255, 0.62);
+  --glass-strong: rgba(255, 255, 255, 0.82);
+  --glass-border: rgba(255, 255, 255, 0.58);
+  --glass-highlight: rgba(255, 255, 255, 0.52);
+  --glass-shadow: 0 20px 45px rgba(37, 74, 138, 0.18);
+  --glass-shadow-soft: 0 10px 24px rgba(35, 66, 116, 0.14);
+
+  --accent: #2f7dff;
+  --accent-strong: #1d63e4;
+  --focus-ring: rgba(37, 99, 235, 0.8);
+
+  --success-bg: rgba(136, 239, 172, 0.22);
+  --success-fg: #0b6634;
+  --success-border: rgba(75, 176, 123, 0.45);
+
+  --open-bg: rgba(147, 197, 253, 0.2);
+  --open-fg: #1f4dae;
+  --open-border: rgba(91, 146, 219, 0.45);
+
+  --danger-bg: linear-gradient(135deg, rgba(214, 70, 70, 0.96), rgba(164, 31, 31, 0.94));
+  --danger-border: rgba(123, 20, 20, 0.58);
+
+  background: var(--bg-base);
+  color: var(--text-primary);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-base: #081220;
+    --bg-secondary: #0c1b2c;
+    --bg-radial: rgba(56, 91, 145, 0.28);
+    --text-primary: #e3ecff;
+    --text-secondary: #bfd0eb;
+    --text-muted: #99afcf;
+
+    --glass-surface: rgba(16, 32, 50, 0.58);
+    --glass-strong: rgba(20, 38, 58, 0.78);
+    --glass-border: rgba(144, 181, 234, 0.24);
+    --glass-highlight: rgba(194, 220, 255, 0.16);
+    --glass-shadow: 0 24px 52px rgba(1, 7, 20, 0.52);
+    --glass-shadow-soft: 0 14px 28px rgba(4, 10, 20, 0.44);
+
+    --accent: #79b0ff;
+    --accent-strong: #5e98f0;
+    --focus-ring: rgba(121, 176, 255, 0.8);
+
+    --success-bg: rgba(92, 184, 130, 0.24);
+    --success-fg: #bcf3d2;
+    --success-border: rgba(129, 234, 175, 0.38);
+
+    --open-bg: rgba(67, 120, 188, 0.32);
+    --open-fg: #d5e7ff;
+    --open-border: rgba(126, 171, 237, 0.4);
+
+    --danger-bg: linear-gradient(135deg, rgba(199, 63, 63, 0.95), rgba(146, 24, 24, 0.9));
+    --danger-border: rgba(230, 112, 112, 0.5);
+  }
 }
 
 * {
   box-sizing: border-box;
 }
 
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
 body {
   margin: 0;
+  color: var(--text-primary);
+  background:
+    radial-gradient(circle at 15% -10%, var(--bg-radial), transparent 58%),
+    radial-gradient(circle at 90% 0%, rgba(109, 171, 255, 0.26), transparent 44%),
+    linear-gradient(165deg, var(--bg-base), var(--bg-secondary));
 }
