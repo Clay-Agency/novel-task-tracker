@@ -11,6 +11,9 @@ This onboarding guide is for pilot participants and facilitators to align on:
 
 ## Related pilot docs
 - FAQ + troubleshooting: [`docs/pilot/faq-troubleshooting.md`](./faq-troubleshooting.md)
+- Feedback interview guide: [`docs/pilot/feedback-questions.md`](./feedback-questions.md)
+- Feedback synthesis template: [`docs/pilot/feedback-synthesis-template.md`](./feedback-synthesis-template.md)
+- Weekly report format: [`docs/pilot/weekly-report-format.md`](./weekly-report-format.md)
 
 ## Pilot app link
 - Live app: https://clay-agency.github.io/novel-task-tracker/
