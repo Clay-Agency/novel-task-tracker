@@ -2,6 +2,7 @@ import { afterEach, beforeEach, vi } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import App from './App';
 import { TASKS_STORAGE_KEY, TASKS_STORAGE_VERSION } from './state/tasks';
+import { THEME_STORAGE_KEY } from './theme';
 
 interface MockStorage {
   getItem: (key: string) => string | null;
@@ -110,6 +111,8 @@ describe('App core UI flows', () => {
       configurable: true,
       value: originalLocalStorage
     });
+
+    document.documentElement.removeAttribute('data-theme');
   });
 
   it('shows initial empty state and TEFQ metadata guidance', () => {
@@ -118,6 +121,36 @@ describe('App core UI flows', () => {
     expect(screen.getByRole('heading', { name: /novel task tracker/i })).toBeInTheDocument();
     expect(screen.getByText(/no tasks yet/i)).toBeInTheDocument();
     expect(screen.getByText(/no tefq-eligible tasks yet/i)).toBeInTheDocument();
+  });
+
+  it('defaults to system theme when no preference is stored', () => {
+    render(<App />);
+
+    const themeSelect = screen.getByLabelText(/^theme$/i) as HTMLSelectElement;
+
+    expect(themeSelect.value).toBe('system');
+    expect(document.documentElement.getAttribute('data-theme')).toBeNull();
+    expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBeNull();
+  });
+
+  it('applies selected theme and persists preference across remounts', () => {
+    const { unmount } = render(<App />);
+
+    const themeSelect = screen.getByLabelText(/^theme$/i);
+
+    fireEvent.change(themeSelect, { target: { value: 'dark' } });
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+    expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe('dark');
+
+    unmount();
+    render(<App />);
+
+    expect((screen.getByLabelText(/^theme$/i) as HTMLSelectElement).value).toBe('dark');
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+
+    fireEvent.change(screen.getByLabelText(/^theme$/i), { target: { value: 'system' } });
+    expect(document.documentElement.getAttribute('data-theme')).toBeNull();
+    expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe('system');
   });
 
   it('validates create form and adds a task with metadata', () => {

@@ -24,6 +24,13 @@ import {
   reopenTaskAction,
   tasksReducer
 } from './state/tasks';
+import {
+  applyThemePreference,
+  loadThemePreferenceResult,
+  persistThemePreference,
+  THEME_PREFERENCE,
+  type ThemePreference
+} from './theme';
 
 const STATUS_FILTERS = {
   ALL: 'all',
@@ -150,7 +157,11 @@ function readUploadedFileText(file: File): Promise<string> {
 function App() {
   const loadResult = useMemo(() => loadTasksStateResult(), []);
   const skipInitialPersistRef = useRef(loadResult.skipInitialPersist);
+  const loadThemeResult = useMemo(() => loadThemePreferenceResult(), []);
+  const skipInitialThemePersistRef = useRef(loadThemeResult.skipInitialPersist);
+
   const [state, dispatch] = useReducer(tasksReducer, loadResult.state);
+  const [themePreference, setThemePreference] = useState<ThemePreference>(loadThemeResult.preference);
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -194,6 +205,19 @@ function App() {
 
     persistTasksState(state);
   }, [state]);
+
+  useEffect(() => {
+    applyThemePreference(themePreference);
+  }, [themePreference]);
+
+  useEffect(() => {
+    if (skipInitialThemePersistRef.current) {
+      skipInitialThemePersistRef.current = false;
+      return;
+    }
+
+    persistThemePreference(themePreference);
+  }, [themePreference]);
 
   useEffect(() => {
     if (editingTaskId) {
@@ -373,7 +397,21 @@ function App() {
 
   return (
     <main className="app">
-      <h1>Novel Task Tracker</h1>
+      <header className="app-header">
+        <h1>Novel Task Tracker</h1>
+        <div className="theme-control">
+          <label htmlFor="theme-preference">Theme</label>
+          <select
+            id="theme-preference"
+            value={themePreference}
+            onChange={(event) => setThemePreference(event.target.value as ThemePreference)}
+          >
+            <option value={THEME_PREFERENCE.SYSTEM}>System</option>
+            <option value={THEME_PREFERENCE.LIGHT}>Light</option>
+            <option value={THEME_PREFERENCE.DARK}>Dark</option>
+          </select>
+        </div>
+      </header>
       <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">
         {announceMessage}
       </p>
