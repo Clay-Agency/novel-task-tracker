@@ -40,6 +40,11 @@ Choose one of the following:
 - Save the downloaded file locally.
 - You can re-import later with **Import JSON** in the same panel.
 
+## Support bundle export (for debugging)
+- Use **Export support bundle** for a single JSON file containing task data, diagnostics (version/commit), and optional usage-log data.
+- Usage-log data is included **only if local usage log is enabled** at export time.
+- Treat support bundles as sensitive because task titles/descriptions and local behavior traces may be present.
+
 ## How to report bugs or share feedback
 - Bug report / QA finding / feature request templates:
   - [`bug-report.md`](../../.github/ISSUE_TEMPLATE/bug-report.md)

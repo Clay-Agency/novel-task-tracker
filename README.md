@@ -167,6 +167,14 @@ The app includes an **opt-in** local usage log for pilot debugging.
 - Data is stored only in this browser profile (`localStorage`) and can be exported as JSON from the UI.
 - **No usage log data is sent to any server.**
 
+## Export support bundle (Issue #65)
+Use **Export support bundle** in the Tasks panel to download a single JSON file containing:
+- versioned task export payload
+- optional usage-log payload (**only when the usage log toggle is enabled**)
+- diagnostics metadata (app version + commit SHA)
+
+> Privacy warning: support bundles can contain full task content and optional local usage details. Review before sharing with support.
+
 ## Diagnostics footer / in-app support links (Issue #48)
 A lightweight diagnostics footer appears at the bottom of the app and shows:
 - app version (from `package.json` at build time)

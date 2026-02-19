@@ -296,10 +296,62 @@ describe('App core UI flows', () => {
     expect(within(fallbackList).getByRole('heading', { name: /email editor/i })).toBeInTheDocument();
   });
 
+
+  it('exports support bundle json with diagnostics and optional usage log payload', async () => {
+    vi.useRealTimers();
+
+    const createObjectURL = vi.fn((blob: Blob | MediaSource) => {
+      void blob;
+      return 'blob:mock-support-url';
+    });
+    const revokeObjectURL = vi.fn();
+
+    Object.defineProperty(window.URL, 'createObjectURL', {
+      configurable: true,
+      writable: true,
+      value: createObjectURL
+    });
+
+    Object.defineProperty(window.URL, 'revokeObjectURL', {
+      configurable: true,
+      writable: true,
+      value: revokeObjectURL
+    });
+
+    const anchorClickSpy = vi
+      .spyOn(HTMLAnchorElement.prototype, 'click')
+      .mockImplementation(() => undefined);
+
+    render(<App />);
+
+    createTask({ title: 'Bundle task' });
+
+    expect(screen.getByText(/privacy warning: support bundle export includes full task content/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /export support bundle/i }));
+
+    expect(createObjectURL).toHaveBeenCalledTimes(1);
+    expect(revokeObjectURL).toHaveBeenCalledTimes(1);
+
+    expect(screen.getByText(/exported support bundle with tasks and diagnostics/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText(/enable local usage log/i));
+    fireEvent.click(screen.getByRole('button', { name: /export support bundle/i }));
+
+    expect(createObjectURL).toHaveBeenCalledTimes(2);
+
+    expect(screen.getByText(/exported support bundle with tasks, usage log, and diagnostics/i)).toBeInTheDocument();
+
+    anchorClickSpy.mockRestore();
+  });
+
   it('exports tasks as JSON and imports valid files', async () => {
     vi.useRealTimers();
 
-    const createObjectURL = vi.fn(() => 'blob:mock-export-url');
+    const createObjectURL = vi.fn((blob: Blob | MediaSource) => {
+      void blob;
+      return 'blob:mock-export-url';
+    });
     const revokeObjectURL = vi.fn();
 
     Object.defineProperty(window.URL, 'createObjectURL', {
