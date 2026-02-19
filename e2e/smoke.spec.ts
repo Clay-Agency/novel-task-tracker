@@ -74,7 +74,7 @@ async function createTask(
     await page.locator('#task-context').selectOption(context);
   }
 
-  await page.getByRole('button', { name: 'Add task' }).click();
+  await page.getByRole('button', { name: /add task/i }).click();
 }
 
 test('supports core task lifecycle and persistence across reload', async ({ page }) => {
@@ -88,13 +88,13 @@ test('supports core task lifecycle and persistence across reload', async ({ page
   await page.reload();
   await expect(taskList.getByRole('heading', { name: 'Persistent smoke task' })).toBeVisible();
 
-  await page.getByRole('button', { name: 'Mark completed' }).click();
+  await page.getByRole('button', { name: /mark completed/i }).click();
   await expect(taskList.getByText('Completed')).toBeVisible();
 
-  await page.getByRole('button', { name: 'Reopen' }).click();
+  await page.getByRole('button', { name: /reopen/i }).click();
   await expect(taskList.getByText('Open')).toBeVisible();
 
-  await page.getByRole('button', { name: 'Delete' }).click();
+  await page.getByRole('button', { name: /delete/i }).click();
   await expect(taskList.getByRole('heading', { name: 'Persistent smoke task' })).toHaveCount(0);
 });
 
@@ -113,7 +113,7 @@ test('supports search, status filtering, and title sorting', async ({ page }) =>
   await expect(taskList.getByRole('heading', { name: 'Alpha sprint notes' })).toBeVisible();
   await expect(taskList.getByRole('heading', { name: 'Zeta draft notes' })).toHaveCount(0);
 
-  await page.getByRole('button', { name: 'Mark completed' }).click();
+  await page.getByRole('button', { name: /mark completed/i }).click();
   await page.locator('#status-filter').selectOption('completed');
   await expect(taskList.getByRole('heading', { name: 'Alpha sprint notes' })).toBeVisible();
 });
