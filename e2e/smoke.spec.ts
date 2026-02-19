@@ -159,6 +159,21 @@ test('supports search, status filtering, and title sorting', async ({ page }) =>
 });
 
 
+
+test('exports support bundle json with privacy warning', async ({ page }) => {
+  await openWithFixedClock(page);
+
+  await createTask(page, { title: 'Bundle target e2e' });
+
+  await expect(page.getByText(/privacy warning: support bundle export includes full task content/i)).toBeVisible();
+
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Export support bundle' }).click();
+  const download = await downloadPromise;
+
+  expect(download.suggestedFilename()).toMatch(/novel-task-tracker-support-bundle-\d{4}-\d{2}-\d{2}\.json/);
+});
+
 test('exports task JSON and imports replacement task list', async ({ page }) => {
   await openWithFixedClock(page);
 

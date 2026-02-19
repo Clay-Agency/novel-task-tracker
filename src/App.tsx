@@ -35,6 +35,7 @@ import {
   USAGE_EVENT_TYPES,
   type UsageEventType
 } from './state/usageLog';
+import { exportSupportBundleJson } from './state/supportBundle';
 import {
   applyThemePreference,
   clearThemePreference,
@@ -512,6 +513,37 @@ function App() {
     setAnnounceMessage('Local usage log disabled.');
   }
 
+  function handleExportSupportBundleJson(): void {
+    try {
+      const json = exportSupportBundleJson({
+        tasksState: state,
+        usageLogState,
+        diagnostics: {
+          appVersion: APP_VERSION,
+          appCommitSha: APP_COMMIT_SHA
+        }
+      });
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const downloadLink = document.createElement('a');
+
+      downloadLink.href = url;
+      downloadLink.download = `novel-task-tracker-support-bundle-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.append(downloadLink);
+      downloadLink.click();
+      downloadLink.remove();
+      URL.revokeObjectURL(url);
+
+      setAnnounceMessage(
+        usageLogState.enabled
+          ? 'Exported support bundle with tasks, usage log, and diagnostics.'
+          : 'Exported support bundle with tasks and diagnostics.'
+      );
+    } catch {
+      setAnnounceMessage('Unable to export support bundle JSON.');
+    }
+  }
+
   function handleExportUsageLogJson(): void {
     try {
       const json = exportUsageLogJson(usageLogState);
@@ -840,9 +872,17 @@ function App() {
           </div>
         </fieldset>
 
+        <p className="task-meta support-bundle-warning">
+          Privacy warning: support bundle export includes full task content and diagnostics, plus local usage log entries if
+          enabled. Review the file before sharing.
+        </p>
+
         <div className="task-actions" id="data-portability">
           <button type="button" onClick={handleExportTasksJson}>
             Export JSON
+          </button>
+          <button type="button" className="secondary" onClick={handleExportSupportBundleJson}>
+            Export support bundle
           </button>
           <button type="button" className="secondary" onClick={openImportTasksPicker}>
             Import JSON

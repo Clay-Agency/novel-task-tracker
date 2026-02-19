@@ -450,3 +450,7 @@ textarea:focus-visible {
   font-size: 0.78rem;
   overflow: auto;
 }
+
+.support-bundle-warning {
+  margin: 0.25rem 0 0.5rem;
+}
