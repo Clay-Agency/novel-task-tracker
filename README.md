@@ -29,6 +29,7 @@ npm run start
 npm run lint
 npm run typecheck
 npm run test
+npm run e2e
 ```
 
 ## Build
@@ -43,6 +44,7 @@ Gate must pass before merge:
 - `npm run lint`
 - `npm run typecheck`
 - `npm test`
+- `npm run e2e` (Playwright smoke suite)
 - Unit coverage for task domain/reducer/persistence logic
 - UI integration coverage for CRUD + search/filter/sort + persistence
 - Deterministic test behavior
