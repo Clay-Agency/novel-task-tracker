@@ -5,6 +5,8 @@ Baseline React scaffold for the Novel Task Tracker project.
 ## Live demo
 GitHub Pages: https://clay-agency.github.io/novel-task-tracker/
 
+Single source of truth for the pilot URL: [`docs/pilot/pilot-url.md`](./docs/pilot/pilot-url.md)
+
 ## Prerequisites
 - Node.js 18+
 - npm 9+
