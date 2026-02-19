@@ -158,7 +158,7 @@ describe('App core UI flows', () => {
     fireEvent.change(screen.getByLabelText(/edit energy required/i), {
       target: { value: 'high' }
     });
-    fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
 
     const taskList = screen.getByRole('list', { name: /task list/i });
     expect(within(taskList).getByRole('heading', { name: /write detailed chapter plan/i })).toBeInTheDocument();
@@ -173,6 +173,24 @@ describe('App core UI flows', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /delete/i }));
     expect(screen.getByText(/no tasks yet/i)).toBeInTheDocument();
+  });
+
+
+  it('supports keyboard escape to cancel edit mode and exposes task-specific action labels', () => {
+    render(<App />);
+
+    createTask({ title: 'Keyboard task' });
+
+    fireEvent.click(screen.getByRole('button', { name: /edit keyboard task/i }));
+    const editTitleInput = screen.getByLabelText(/edit title/i);
+    fireEvent.change(editTitleInput, { target: { value: 'Changed title' } });
+
+    fireEvent.keyDown(editTitleInput, { key: 'Escape' });
+
+    expect(screen.queryByLabelText(/edit title/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /keyboard task/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /mark completed keyboard task/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /delete keyboard task/i })).toBeInTheDocument();
   });
 
   it('supports search/filter/sort controls', () => {

@@ -36,6 +36,13 @@
   gap: 0.5rem;
 }
 
+.fieldset-reset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-inline-size: 0;
+}
+
 .controls {
   display: grid;
   gap: 0.5rem;
@@ -85,6 +92,14 @@ button.secondary {
 button.danger {
   background: #7f1d1d;
   border-color: #7f1d1d;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid #2563eb;
+  outline-offset: 2px;
 }
 
 .task-list {
@@ -206,6 +221,18 @@ button.danger {
   margin: 0;
   color: #b91c1c;
   font-size: 0.875rem;
+}
+
+.sr-only {
+  border: 0;
+  clip: rect(0 0 0 0);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
 }
 
 @media (min-width: 960px) {

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useReducer, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useReducer, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import './App.css';
 import { TASK_CONTEXT, TASK_ENERGY, TASK_PRIORITY, TASK_STATUS, type Task, type TaskContext, type TaskEnergy } from './domain/task';
 import { buildNowQueue } from './domain/tefq';
@@ -147,6 +147,10 @@ function App() {
   const [availableTimeCustom, setAvailableTimeCustom] = useState('');
   const [nowEnergy, setNowEnergy] = useState<TaskEnergy>(TASK_ENERGY.MEDIUM);
   const [nowContext, setNowContext] = useState<TaskContext | ''>('');
+  const [announceMessage, setAnnounceMessage] = useState('');
+
+  const createTitleInputRef = useRef<HTMLInputElement | null>(null);
+  const editTitleInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (skipInitialPersistRef.current) {
@@ -156,6 +160,12 @@ function App() {
 
     persistTasksState(state);
   }, [state]);
+
+  useEffect(() => {
+    if (editingTaskId) {
+      editTitleInputRef.current?.focus();
+    }
+  }, [editingTaskId]);
 
   const visibleTasks = useMemo(
     () =>
@@ -203,6 +213,8 @@ function App() {
       setEnergy('');
       setContext('');
       setCreateError('');
+      setAnnounceMessage('Task added.');
+      createTitleInputRef.current?.focus();
     } catch (error: unknown) {
       setCreateError(getErrorMessage(error));
     }
@@ -218,9 +230,10 @@ function App() {
     setEditEnergy(task.energy ?? '');
     setEditContext(task.context ?? '');
     setEditError('');
+    setAnnounceMessage(`Editing ${task.title}.`);
   }
 
-  function cancelEdit(): void {
+  function cancelEdit(shouldAnnounce = true): void {
     setEditingTaskId(null);
     setEditTitle('');
     setEditDescription('');
@@ -230,6 +243,9 @@ function App() {
     setEditEnergy('');
     setEditContext('');
     setEditError('');
+    if (shouldAnnounce) {
+      setAnnounceMessage('Edit cancelled.');
+    }
   }
 
   function saveEdit(taskId: string): void {
@@ -246,7 +262,8 @@ function App() {
           context: normalizeSelectValue(editContext)
         })
       );
-      cancelEdit();
+      cancelEdit(false);
+      setAnnounceMessage('Task updated.');
     } catch (error: unknown) {
       setEditError(getErrorMessage(error));
     }
@@ -256,59 +273,80 @@ function App() {
     dispatch(
       task.status === TASK_STATUS.COMPLETED ? reopenTaskAction({ id: task.id }) : completeTaskAction({ id: task.id })
     );
+    setAnnounceMessage(task.status === TASK_STATUS.COMPLETED ? 'Task reopened.' : 'Task marked completed.');
+  }
+
+  function deleteTask(taskId: string): void {
+    dispatch(deleteTaskAction({ id: taskId }));
+    setAnnounceMessage('Task deleted.');
+  }
+
+  function handleEditKeyboard(event: KeyboardEvent<HTMLDivElement>): void {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      cancelEdit();
+    }
   }
 
   return (
     <main className="app">
       <h1>Novel Task Tracker</h1>
+      <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+        {announceMessage}
+      </p>
 
       <section className="panel panel--now" aria-label="Now queue">
         <h2>Now queue (TEFQ)</h2>
-        <p className="panel-copy">Pick your current constraints to get deterministic “do this now” suggestions.</p>
+        <p className="panel-copy" id="now-queue-hint">
+          Pick your current constraints to get deterministic “do this now” suggestions.
+        </p>
 
-        <div className="controls">
-          <label htmlFor="now-time">Available time</label>
-          <select id="now-time" value={availableTimePreset} onChange={(event) => setAvailableTimePreset(event.target.value)}>
-            {NOW_TIME_PRESETS.map((minutes) => (
-              <option key={minutes} value={String(minutes)}>
-                {minutes} min
-              </option>
-            ))}
-            <option value="custom">Custom</option>
-          </select>
+        <fieldset className="fieldset-reset">
+          <legend className="sr-only">Now queue filters</legend>
+          <div className="controls" role="group" aria-describedby="now-queue-hint">
+            <label htmlFor="now-time">Available time</label>
+            <select id="now-time" value={availableTimePreset} onChange={(event) => setAvailableTimePreset(event.target.value)}>
+              {NOW_TIME_PRESETS.map((minutes) => (
+                <option key={minutes} value={String(minutes)}>
+                  {minutes} min
+                </option>
+              ))}
+              <option value="custom">Custom</option>
+            </select>
 
-          {availableTimePreset === 'custom' ? (
-            <>
-              <label htmlFor="now-time-custom">Custom minutes</label>
-              <input
-                id="now-time-custom"
-                type="number"
-                min="1"
-                value={availableTimeCustom}
-                onChange={(event) => setAvailableTimeCustom(event.target.value)}
-              />
-            </>
-          ) : null}
+            {availableTimePreset === 'custom' ? (
+              <>
+                <label htmlFor="now-time-custom">Custom minutes</label>
+                <input
+                  id="now-time-custom"
+                  type="number"
+                  min="1"
+                  value={availableTimeCustom}
+                  onChange={(event) => setAvailableTimeCustom(event.target.value)}
+                />
+              </>
+            ) : null}
 
-          <label htmlFor="now-energy">Current energy</label>
-          <select id="now-energy" value={nowEnergy} onChange={(event) => setNowEnergy(event.target.value as TaskEnergy)}>
-            {ENERGY_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+            <label htmlFor="now-energy">Current energy</label>
+            <select id="now-energy" value={nowEnergy} onChange={(event) => setNowEnergy(event.target.value as TaskEnergy)}>
+              {ENERGY_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
 
-          <label htmlFor="now-context">Context (optional)</label>
-          <select id="now-context" value={nowContext} onChange={(event) => setNowContext(event.target.value as TaskContext | '')}>
-            <option value="">Any context</option>
-            {CONTEXT_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
+            <label htmlFor="now-context">Context (optional)</label>
+            <select id="now-context" value={nowContext} onChange={(event) => setNowContext(event.target.value as TaskContext | '')}>
+              <option value="">Any context</option>
+              {CONTEXT_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </fieldset>
 
         {nowQueue.eligibleCount === 0 ? (
           <p className="empty-state">
@@ -366,12 +404,13 @@ function App() {
 
       <section className="panel panel--create" aria-label="Create task">
         <h2>Add task</h2>
-        <form onSubmit={handleCreate} className="task-form">
+        <form onSubmit={handleCreate} className="task-form" aria-label="Add task form">
           <label htmlFor="task-title">Title</label>
           <input
             id="task-title"
             name="task-title"
             value={title}
+            ref={createTitleInputRef}
             onChange={(event) => setTitle(event.target.value)}
             placeholder="What do you need to do?"
           />
@@ -386,65 +425,68 @@ function App() {
             placeholder="Add context or notes"
           />
 
-          <div className="controls">
-            <div>
-              <label htmlFor="task-due-date">Due date (optional)</label>
-              <input
-                id="task-due-date"
-                type="date"
-                value={dueDate}
-                onChange={(event) => setDueDate(event.target.value)}
-              />
-            </div>
+          <fieldset className="fieldset-reset">
+            <legend className="sr-only">Optional task metadata</legend>
+            <div className="controls">
+              <div>
+                <label htmlFor="task-due-date">Due date (optional)</label>
+                <input
+                  id="task-due-date"
+                  type="date"
+                  value={dueDate}
+                  onChange={(event) => setDueDate(event.target.value)}
+                />
+              </div>
 
-            <div>
-              <label htmlFor="task-priority">Priority</label>
-              <select id="task-priority" value={priority} onChange={(event) => setPriority(event.target.value as typeof priority)}>
-                <option value={TASK_PRIORITY.NORMAL}>Normal</option>
-                <option value={TASK_PRIORITY.HIGH}>High</option>
-              </select>
-            </div>
+              <div>
+                <label htmlFor="task-priority">Priority</label>
+                <select id="task-priority" value={priority} onChange={(event) => setPriority(event.target.value as typeof priority)}>
+                  <option value={TASK_PRIORITY.NORMAL}>Normal</option>
+                  <option value={TASK_PRIORITY.HIGH}>High</option>
+                </select>
+              </div>
 
-            <div>
-              <label htmlFor="task-duration">Estimated duration</label>
-              <select
-                id="task-duration"
-                value={estimatedDurationMin}
-                onChange={(event) => setEstimatedDurationMin(event.target.value)}
-              >
-                <option value="">Not set</option>
-                {TASK_DURATION_OPTIONS.map((minutes) => (
-                  <option key={minutes} value={String(minutes)}>
-                    {minutes} min
-                  </option>
-                ))}
-              </select>
-            </div>
+              <div>
+                <label htmlFor="task-duration">Estimated duration</label>
+                <select
+                  id="task-duration"
+                  value={estimatedDurationMin}
+                  onChange={(event) => setEstimatedDurationMin(event.target.value)}
+                >
+                  <option value="">Not set</option>
+                  {TASK_DURATION_OPTIONS.map((minutes) => (
+                    <option key={minutes} value={String(minutes)}>
+                      {minutes} min
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-            <div>
-              <label htmlFor="task-energy">Energy required</label>
-              <select id="task-energy" value={energy} onChange={(event) => setEnergy(event.target.value as TaskEnergy | '')}>
-                <option value="">Not set</option>
-                {ENERGY_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+              <div>
+                <label htmlFor="task-energy">Energy required</label>
+                <select id="task-energy" value={energy} onChange={(event) => setEnergy(event.target.value as TaskEnergy | '')}>
+                  <option value="">Not set</option>
+                  {ENERGY_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-            <div>
-              <label htmlFor="task-context">Context</label>
-              <select id="task-context" value={context} onChange={(event) => setContext(event.target.value as TaskContext | '')}>
-                <option value="">No context</option>
-                {CONTEXT_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+              <div>
+                <label htmlFor="task-context">Context</label>
+                <select id="task-context" value={context} onChange={(event) => setContext(event.target.value as TaskContext | '')}>
+                  <option value="">No context</option>
+                  {CONTEXT_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
-          </div>
+          </fieldset>
 
           {createError ? (
             <p className="error" role="alert">
@@ -458,34 +500,41 @@ function App() {
 
       <section className="panel panel--tasks" aria-label="Filter and sort tasks">
         <h2>Tasks</h2>
-        <div className="controls">
-          <label htmlFor="search-tasks">Search</label>
-          <input
-            id="search-tasks"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search title or description"
-          />
+        <fieldset className="fieldset-reset">
+          <legend className="sr-only">Task list filters</legend>
+          <div className="controls">
+            <label htmlFor="search-tasks">Search</label>
+            <input
+              id="search-tasks"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search title or description"
+            />
 
-          <label htmlFor="status-filter">Status</label>
-          <select
-            id="status-filter"
-            value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}
-          >
-            <option value={STATUS_FILTERS.ALL}>All</option>
-            <option value={STATUS_FILTERS.OPEN}>Open</option>
-            <option value={STATUS_FILTERS.COMPLETED}>Completed</option>
-          </select>
+            <label htmlFor="status-filter">Status</label>
+            <select
+              id="status-filter"
+              value={statusFilter}
+              onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}
+            >
+              <option value={STATUS_FILTERS.ALL}>All</option>
+              <option value={STATUS_FILTERS.OPEN}>Open</option>
+              <option value={STATUS_FILTERS.COMPLETED}>Completed</option>
+            </select>
 
-          <label htmlFor="sort-by">Sort</label>
-          <select id="sort-by" value={sortBy} onChange={(event) => setSortBy(event.target.value as SortOption)}>
-            <option value={SORT_OPTIONS.UPDATED_DESC}>Recently updated</option>
-            <option value={SORT_OPTIONS.CREATED_DESC}>Newest first</option>
-            <option value={SORT_OPTIONS.CREATED_ASC}>Oldest first</option>
-            <option value={SORT_OPTIONS.TITLE_ASC}>Title A-Z</option>
-          </select>
-        </div>
+            <label htmlFor="sort-by">Sort</label>
+            <select id="sort-by" value={sortBy} onChange={(event) => setSortBy(event.target.value as SortOption)}>
+              <option value={SORT_OPTIONS.UPDATED_DESC}>Recently updated</option>
+              <option value={SORT_OPTIONS.CREATED_DESC}>Newest first</option>
+              <option value={SORT_OPTIONS.CREATED_ASC}>Oldest first</option>
+              <option value={SORT_OPTIONS.TITLE_ASC}>Title A-Z</option>
+            </select>
+          </div>
+        </fieldset>
+
+        <p className="sr-only" role="status" aria-live="polite">
+          Showing {visibleTasks.length} {visibleTasks.length === 1 ? 'task' : 'tasks'}.
+        </p>
 
         {state.tasks.length === 0 ? (
           <p className="empty-state">No tasks yet. Add your first task to get started.</p>
@@ -503,11 +552,12 @@ function App() {
             return (
               <li key={task.id} className={`task-item ${isCompleted ? 'task-item--completed' : 'task-item--open'}`}>
                 {isEditing ? (
-                  <div className="task-edit">
+                  <div className="task-edit" onKeyDown={handleEditKeyboard}>
                     <label htmlFor={`edit-title-${task.id}`}>Edit title</label>
                     <input
                       id={`edit-title-${task.id}`}
                       value={editTitle}
+                      ref={editTitleInputRef}
                       onChange={(event) => setEditTitle(event.target.value)}
                     />
 
@@ -519,77 +569,80 @@ function App() {
                       onChange={(event) => setEditDescription(event.target.value)}
                     />
 
-                    <div className="controls">
-                      <div>
-                        <label htmlFor={`edit-due-date-${task.id}`}>Edit due date</label>
-                        <input
-                          id={`edit-due-date-${task.id}`}
-                          type="date"
-                          value={editDueDate}
-                          onChange={(event) => setEditDueDate(event.target.value)}
-                        />
-                      </div>
+                    <fieldset className="fieldset-reset">
+                      <legend className="sr-only">Edit task metadata</legend>
+                      <div className="controls">
+                        <div>
+                          <label htmlFor={`edit-due-date-${task.id}`}>Edit due date</label>
+                          <input
+                            id={`edit-due-date-${task.id}`}
+                            type="date"
+                            value={editDueDate}
+                            onChange={(event) => setEditDueDate(event.target.value)}
+                          />
+                        </div>
 
-                      <div>
-                        <label htmlFor={`edit-priority-${task.id}`}>Edit priority</label>
-                        <select
-                          id={`edit-priority-${task.id}`}
-                          value={editPriority}
-                          onChange={(event) => setEditPriority(event.target.value as typeof editPriority)}
-                        >
-                          <option value={TASK_PRIORITY.NORMAL}>Normal</option>
-                          <option value={TASK_PRIORITY.HIGH}>High</option>
-                        </select>
-                      </div>
+                        <div>
+                          <label htmlFor={`edit-priority-${task.id}`}>Edit priority</label>
+                          <select
+                            id={`edit-priority-${task.id}`}
+                            value={editPriority}
+                            onChange={(event) => setEditPriority(event.target.value as typeof editPriority)}
+                          >
+                            <option value={TASK_PRIORITY.NORMAL}>Normal</option>
+                            <option value={TASK_PRIORITY.HIGH}>High</option>
+                          </select>
+                        </div>
 
-                      <div>
-                        <label htmlFor={`edit-duration-${task.id}`}>Edit estimated duration</label>
-                        <select
-                          id={`edit-duration-${task.id}`}
-                          value={editDuration}
-                          onChange={(event) => setEditDuration(event.target.value)}
-                        >
-                          <option value="">Not set</option>
-                          {TASK_DURATION_OPTIONS.map((minutes) => (
-                            <option key={minutes} value={String(minutes)}>
-                              {minutes} min
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+                        <div>
+                          <label htmlFor={`edit-duration-${task.id}`}>Edit estimated duration</label>
+                          <select
+                            id={`edit-duration-${task.id}`}
+                            value={editDuration}
+                            onChange={(event) => setEditDuration(event.target.value)}
+                          >
+                            <option value="">Not set</option>
+                            {TASK_DURATION_OPTIONS.map((minutes) => (
+                              <option key={minutes} value={String(minutes)}>
+                                {minutes} min
+                              </option>
+                            ))}
+                          </select>
+                        </div>
 
-                      <div>
-                        <label htmlFor={`edit-energy-${task.id}`}>Edit energy required</label>
-                        <select
-                          id={`edit-energy-${task.id}`}
-                          value={editEnergy}
-                          onChange={(event) => setEditEnergy(event.target.value as TaskEnergy | '')}
-                        >
-                          <option value="">Not set</option>
-                          {ENERGY_OPTIONS.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+                        <div>
+                          <label htmlFor={`edit-energy-${task.id}`}>Edit energy required</label>
+                          <select
+                            id={`edit-energy-${task.id}`}
+                            value={editEnergy}
+                            onChange={(event) => setEditEnergy(event.target.value as TaskEnergy | '')}
+                          >
+                            <option value="">Not set</option>
+                            {ENERGY_OPTIONS.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
 
-                      <div>
-                        <label htmlFor={`edit-context-${task.id}`}>Edit context</label>
-                        <select
-                          id={`edit-context-${task.id}`}
-                          value={editContext}
-                          onChange={(event) => setEditContext(event.target.value as TaskContext | '')}
-                        >
-                          <option value="">No context</option>
-                          {CONTEXT_OPTIONS.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
+                        <div>
+                          <label htmlFor={`edit-context-${task.id}`}>Edit context</label>
+                          <select
+                            id={`edit-context-${task.id}`}
+                            value={editContext}
+                            onChange={(event) => setEditContext(event.target.value as TaskContext | '')}
+                          >
+                            <option value="">No context</option>
+                            {CONTEXT_OPTIONS.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
-                    </div>
+                    </fieldset>
 
                     {editError ? (
                       <p className="error" role="alert">
@@ -598,10 +651,15 @@ function App() {
                     ) : null}
 
                     <div className="task-actions">
-                      <button type="button" onClick={() => saveEdit(task.id)}>
+                      <button type="button" onClick={() => saveEdit(task.id)} aria-label={`Save changes for ${task.title}`}>
                         Save
                       </button>
-                      <button type="button" className="secondary" onClick={cancelEdit}>
+                      <button
+                        type="button"
+                        className="secondary"
+                        onClick={() => cancelEdit()}
+                        aria-label={`Cancel editing ${task.title}`}
+                      >
                         Cancel
                       </button>
                     </div>
@@ -624,13 +682,22 @@ function App() {
                       <span>Context: {formatContext(task.context)}</span>
                     </p>
                     <div className="task-actions">
-                      <button type="button" onClick={() => startEdit(task)}>
+                      <button type="button" onClick={() => startEdit(task)} aria-label={`Edit ${task.title}`}>
                         Edit
                       </button>
-                      <button type="button" onClick={() => toggleCompleted(task)}>
+                      <button
+                        type="button"
+                        onClick={() => toggleCompleted(task)}
+                        aria-label={`${isCompleted ? 'Reopen' : 'Mark completed'} ${task.title}`}
+                      >
                         {isCompleted ? 'Reopen' : 'Mark completed'}
                       </button>
-                      <button type="button" className="danger" onClick={() => dispatch(deleteTaskAction({ id: task.id }))}>
+                      <button
+                        type="button"
+                        className="danger"
+                        onClick={() => deleteTask(task.id)}
+                        aria-label={`Delete ${task.title}`}
+                      >
                         Delete
                       </button>
                     </div>

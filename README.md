@@ -132,6 +132,9 @@ Use the quick manual checklist at [`docs/qa/responsive-qa-checklist.md`](./docs/
 ## Pilot readiness + cross-browser QA plan (Issue #27)
 Use the pilot gate checklist and browser/device validation plan at [`docs/qa/pilot-readiness-cross-browser-plan.md`](./docs/qa/pilot-readiness-cross-browser-plan.md).
 
+## Accessibility baseline manual check (Issue #35)
+Use the quick keyboard/ARIA smoke pass at [`docs/qa/accessibility-baseline-check.md`](./docs/qa/accessibility-baseline-check.md) before merging UI changes.
+
 ## Pilot onboarding packet + demo script (Issue #30)
 Use these docs for pilot participant onboarding, live walkthroughs, and structured feedback capture:
 - [`docs/pilot/onboarding.md`](./docs/pilot/onboarding.md)
