@@ -123,6 +123,25 @@ describe('App core UI flows', () => {
     expect(screen.getByText(/no tefq-eligible tasks yet/i)).toBeInTheDocument();
   });
 
+
+  it('shows diagnostics footer metadata and support links', () => {
+    render(<App />);
+
+    expect(screen.getByText(/version/i)).toHaveTextContent(/v0\.1\.0/i);
+    expect(screen.getByText(/commit/i)).toHaveTextContent(/[a-f0-9]{7}|dev/i);
+
+    expect(screen.getByRole('link', { name: /report a bug/i })).toHaveAttribute(
+      'href',
+      'https://github.com/Clay-Agency/novel-task-tracker/issues/new?template=bug-report.md'
+    );
+    expect(screen.getByRole('link', { name: /qa docs/i })).toHaveAttribute(
+      'href',
+      'https://github.com/Clay-Agency/novel-task-tracker/tree/main/docs/qa'
+    );
+    expect(screen.getByRole('link', { name: /export json/i })).toHaveAttribute('href', '#data-portability');
+  });
+
+
   it('defaults to system theme when no preference is stored', () => {
     render(<App />);
 

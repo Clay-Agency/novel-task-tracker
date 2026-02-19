@@ -80,6 +80,19 @@ async function createTask(
 test('supports core task lifecycle and persistence across reload', async ({ page }) => {
   await openWithFixedClock(page);
 
+  const diagnostics = page.getByLabel('Diagnostics and support');
+  await expect(diagnostics).toContainText(/Version v0\.1\.0/);
+  await expect(diagnostics).toContainText(/Commit (dev|[a-f0-9]{7})/);
+
+  await expect(page.getByRole('link', { name: 'Report a bug' })).toHaveAttribute(
+    'href',
+    'https://github.com/Clay-Agency/novel-task-tracker/issues/new?template=bug-report.md'
+  );
+  await expect(page.getByRole('link', { name: 'QA docs' })).toHaveAttribute(
+    'href',
+    'https://github.com/Clay-Agency/novel-task-tracker/tree/main/docs/qa'
+  );
+
   await createTask(page, { title: 'Persistent smoke task' });
 
   const taskList = page.getByRole('list', { name: 'Task list' });
