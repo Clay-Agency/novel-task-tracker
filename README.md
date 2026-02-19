@@ -159,6 +159,14 @@ Use **Import JSON** to replace the current list with tasks from a JSON file. Sup
 
 Import validation rejects malformed JSON or unsupported envelopes. Individual invalid task records are skipped during normalization.
 
+## Optional local usage log (Issue #60)
+The app includes an **opt-in** local usage log for pilot debugging.
+
+- Default is **OFF**.
+- Events include task CRUD actions, TEFQ control usage, JSON export/import, and reset actions.
+- Data is stored only in this browser profile (`localStorage`) and can be exported as JSON from the UI.
+- **No usage log data is sent to any server.**
+
 ## Diagnostics footer / in-app support links (Issue #48)
 A lightweight diagnostics footer appears at the bottom of the app and shows:
 - app version (from `package.json` at build time)

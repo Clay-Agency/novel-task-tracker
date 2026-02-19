@@ -11,6 +11,7 @@ In this pilot build, the app runs entirely in your browser.
 - Task data is stored in your browser `localStorage`.
 - Current storage key: `novel-task-tracker/tasks`
 - Theme preference key: `novel-task-tracker/theme`
+- Optional usage log key: `novel-task-tracker/usage-log` (default OFF / opt-in)
 - Data is local to the same browser profile and device.
 
 ## What is not collected in this pilot
@@ -18,6 +19,7 @@ In this pilot build, the app runs entirely in your browser.
 - No server-side task storage
 - No cloud sync across devices
 - No automatic analytics pipeline for task contents
+- No server transmission of usage-log events (if enabled, they remain local unless user exports JSON manually)
 
 ## How to reset / clear data
 Choose one of the following:
@@ -28,7 +30,7 @@ Choose one of the following:
 
 2. **Manual browser reset**
    - Open browser DevTools → Application/Storage → Local Storage.
-   - Remove `novel-task-tracker/tasks` and `novel-task-tracker/theme`.
+   - Remove `novel-task-tracker/tasks`, `novel-task-tracker/theme`, and `novel-task-tracker/usage-log`.
    - Refresh the app.
 
 > Reset is irreversible in this pilot build.

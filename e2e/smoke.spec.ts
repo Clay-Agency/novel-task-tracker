@@ -1,7 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
 const FIXED_NOW_ISO = '2026-02-19T00:00:00.000Z';
-const STORAGE_KEY = 'novel-task-tracker/tasks';
 
 async function openWithFixedClock(page: Page): Promise<void> {
   await page.addInitScript(({ fixedNowIso }) => {
@@ -30,7 +29,7 @@ async function openWithFixedClock(page: Page): Promise<void> {
   }, { fixedNowIso: FIXED_NOW_ISO });
 
   await page.goto('/');
-  await page.evaluate((storageKey) => window.localStorage.removeItem(storageKey), STORAGE_KEY);
+  await page.evaluate(() => window.localStorage.clear());
   await page.reload();
 }
 
