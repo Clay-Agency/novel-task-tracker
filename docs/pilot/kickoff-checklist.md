@@ -13,7 +13,7 @@ Use this checklist before each pilot session to keep setup consistent and avoid 
 - [ ] Confirm meeting link + recording consent workflow (if recording is used).
 
 ## 2) Environment + browser check
-- [ ] Open app: https://clay-agency.github.io/novel-task-tracker/
+- [ ] Open app using the canonical pilot URL: [`docs/pilot/pilot-url.md`](./pilot-url.md)
 - [ ] Use a supported browser version (latest Chrome/Safari/Edge/Firefox).
 - [ ] Use a clean profile/window if possible (recommended: incognito/private window for each participant).
 - [ ] Verify page loads with no obvious console/runtime errors.

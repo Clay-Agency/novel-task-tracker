@@ -18,7 +18,8 @@ This onboarding guide is for pilot participants and facilitators to align on:
 - Weekly report format: [`docs/pilot/weekly-report-format.md`](./weekly-report-format.md)
 
 ## Pilot app link
-- Live app: https://clay-agency.github.io/novel-task-tracker/
+- Canonical pilot URL source: [`docs/pilot/pilot-url.md`](./pilot-url.md)
+- Live app: use the URL listed in the canonical source above.
 
 ## Pilot test setup (2–3 minutes)
 1. Open the app link in a modern browser (Chrome/Safari/Edge/Firefox latest).
