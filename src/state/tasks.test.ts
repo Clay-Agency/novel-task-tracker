@@ -8,6 +8,9 @@ import {
   createTasksStore,
   deleteTaskAction,
   editTaskAction,
+  exportTasksJson,
+  importTasksAction,
+  importTasksFromJson,
   initialTasksState,
   loadTasksState,
   loadTasksStateResult,
@@ -158,6 +161,22 @@ describe('task actions and reducer', () => {
       completedAt: null,
       updatedAt: '2026-02-19T01:45:00.000Z'
     });
+  });
+
+  it('replaces tasks from import action payload', () => {
+    const state = tasksReducer(
+      initialTasksState,
+      createTaskAction({ id: 't1', title: 'Old task', now: '2026-02-19T01:00:00.000Z' })
+    );
+
+    const imported = [
+      createTask({ id: 'i1', title: 'Imported A', now: '2026-02-19T02:00:00.000Z' }),
+      createTask({ id: 'i2', title: 'Imported B', now: '2026-02-19T02:01:00.000Z' })
+    ];
+
+    const importedState = tasksReducer(state, importTasksAction({ tasks: imported }));
+    expect(importedState.tasks).toHaveLength(2);
+    expect(importedState.tasks.map((task) => task.id)).toEqual(['i1', 'i2']);
   });
 
   it('returns previous state for unknown action type', () => {
@@ -325,6 +344,35 @@ describe('task persistence', () => {
 
     storage.setItem(TASKS_STORAGE_KEY, '{not-json');
     expect(loadTasksState(storage)).toEqual(initialTasksState);
+  });
+
+  it('exports and imports versioned JSON', () => {
+    const state = {
+      tasks: [
+        createTask({
+          id: 't1',
+          title: 'Export me',
+          estimatedDurationMin: 30,
+          energy: TASK_ENERGY.MEDIUM,
+          now: '2026-02-19T03:00:00.000Z'
+        })
+      ]
+    };
+
+    const exportedJson = exportTasksJson(state);
+    const exported = JSON.parse(exportedJson) as { version: number; payload: { tasks: unknown[] } };
+
+    expect(exported.version).toBe(TASKS_STORAGE_VERSION);
+    expect(exported.payload.tasks).toHaveLength(1);
+
+    const importedTasks = importTasksFromJson(exportedJson);
+    expect(importedTasks).toHaveLength(1);
+    expect(importedTasks[0]).toMatchObject({ id: 't1', title: 'Export me' });
+  });
+
+  it('rejects malformed import files', () => {
+    expect(() => importTasksFromJson('{invalid')).toThrow(/invalid json file/i);
+    expect(() => importTasksFromJson('{"hello":"world"}')).toThrow(/unsupported import format/i);
   });
 
   it('handles localStorage getter access errors without throwing', () => {

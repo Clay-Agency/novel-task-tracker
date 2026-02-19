@@ -90,6 +90,7 @@ State actions implemented in reducer/store:
 - complete
 - reopen
 - delete
+- import (replace list from validated JSON payload)
 
 ## Core UI flows (Issue #7)
 Implemented in the app UI:
@@ -99,6 +100,7 @@ Implemented in the app UI:
 - Delete flow.
 - Visually distinct status badges/cards for open vs completed tasks.
 - Baseline list controls: search (title/description), status filter, and sort.
+- Export current task list to versioned JSON and import task list from JSON with shape validation.
 
 ## Novel differentiator: Time-Energy Fit Queue (Issue #11)
 TEFQ adds a deterministic “Now queue” to help users pick what to do next based on current constraints.
@@ -143,3 +145,13 @@ Use these docs for pilot participant onboarding, live walkthroughs, structured f
 - [`docs/pilot/feedback-questions.md`](./docs/pilot/feedback-questions.md)
 - [`docs/pilot/feedback-synthesis-template.md`](./docs/pilot/feedback-synthesis-template.md)
 - [`docs/pilot/weekly-report-format.md`](./docs/pilot/weekly-report-format.md)
+
+## JSON export/import (Issue #40)
+Use **Export JSON** in the Tasks panel to download a versioned snapshot of your task list.
+
+Use **Import JSON** to replace the current list with tasks from a JSON file. Supported shapes:
+- Current export shape: `{ "version": 2, "payload": { "tasks": [...] } }`
+- Legacy shape: `{ "tasks": [...] }`
+- Raw array shape: `[...]`
+
+Import validation rejects malformed JSON or unsupported envelopes. Individual invalid task records are skipped during normalization.

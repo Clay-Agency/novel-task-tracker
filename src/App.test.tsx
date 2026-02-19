@@ -243,6 +243,88 @@ describe('App core UI flows', () => {
     expect(within(fallbackList).getByRole('heading', { name: /email editor/i })).toBeInTheDocument();
   });
 
+  it('exports tasks as JSON and imports valid files', async () => {
+    vi.useRealTimers();
+
+    const createObjectURL = vi.fn(() => 'blob:mock-export-url');
+    const revokeObjectURL = vi.fn();
+
+    Object.defineProperty(window.URL, 'createObjectURL', {
+      configurable: true,
+      writable: true,
+      value: createObjectURL
+    });
+
+    Object.defineProperty(window.URL, 'revokeObjectURL', {
+      configurable: true,
+      writable: true,
+      value: revokeObjectURL
+    });
+
+    const anchorClickSpy = vi
+      .spyOn(HTMLAnchorElement.prototype, 'click')
+      .mockImplementation(() => undefined);
+
+    const { container } = render(<App />);
+
+    createTask({ title: 'Export source task' });
+
+    fireEvent.click(screen.getByRole('button', { name: /export json/i }));
+
+    expect(createObjectURL).toHaveBeenCalledTimes(1);
+    expect(revokeObjectURL).toHaveBeenCalledTimes(1);
+    expect(screen.getByText(/exported 1 task as json/i)).toBeInTheDocument();
+
+    const importPayload = {
+      version: TASKS_STORAGE_VERSION,
+      payload: {
+        tasks: [
+          {
+            id: 'import-1',
+            title: 'Imported task',
+            status: 'open',
+            createdAt: '2026-02-19T00:00:00.000Z',
+            updatedAt: '2026-02-19T00:00:00.000Z',
+            description: 'from file',
+            completedAt: null,
+            dueDate: null,
+            priority: 'normal',
+            estimatedDurationMin: 15,
+            energy: 'low',
+            context: 'admin'
+          }
+        ]
+      }
+    };
+
+    const importFile = new File([JSON.stringify(importPayload)], 'tasks.json', { type: 'application/json' });
+    const importInput = container.querySelector('input[type="file"]') as HTMLInputElement;
+
+    fireEvent.change(importInput, { target: { files: [importFile] } });
+
+    await screen.findByText(/imported 1 task from json/i);
+
+    const taskList = screen.getByRole('list', { name: /task list/i });
+    expect(within(taskList).getByRole('heading', { name: /imported task/i })).toBeInTheDocument();
+
+    expect(screen.queryByRole('heading', { name: /export source task/i })).not.toBeInTheDocument();
+    anchorClickSpy.mockRestore();
+  });
+
+  it('shows validation error for malformed import json files', async () => {
+    vi.useRealTimers();
+
+    const { container } = render(<App />);
+
+    const badFile = new File(['{"invalid"'], 'bad.json', { type: 'application/json' });
+    const importInput = container.querySelector('input[type="file"]') as HTMLInputElement;
+
+    fireEvent.change(importInput, { target: { files: [badFile] } });
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent(/invalid json file/i);
+  });
+
   it('persists tasks across remounts', () => {
     const { unmount } = render(<App />);
 

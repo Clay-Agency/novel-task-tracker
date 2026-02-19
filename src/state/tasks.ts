@@ -22,7 +22,8 @@ export const TASK_ACTIONS = {
   EDIT: 'tasks/edit',
   COMPLETE: 'tasks/complete',
   REOPEN: 'tasks/reopen',
-  DELETE: 'tasks/delete'
+  DELETE: 'tasks/delete',
+  IMPORT: 'tasks/import'
 } as const;
 
 export const TASKS_STORAGE_KEY = 'novel-task-tracker/tasks';
@@ -88,12 +89,18 @@ type DeleteTaskAction = {
   payload: { id: string };
 };
 
+type ImportTasksAction = {
+  type: (typeof TASK_ACTIONS)['IMPORT'];
+  payload: { tasks: Task[] };
+};
+
 export type TasksAction =
   | CreateTaskAction
   | EditTaskAction
   | CompleteTaskAction
   | ReopenTaskAction
-  | DeleteTaskAction;
+  | DeleteTaskAction
+  | ImportTasksAction;
 
 export type AnyTasksAction = TasksAction | { type: string };
 
@@ -192,6 +199,17 @@ export function deleteTaskAction({ id }: { id?: string } = {}): DeleteTaskAction
   };
 }
 
+export function importTasksAction({ tasks }: { tasks?: Task[] } = {}): ImportTasksAction {
+  if (!Array.isArray(tasks)) {
+    throw new Error('Import payload must include tasks array');
+  }
+
+  return {
+    type: TASK_ACTIONS.IMPORT,
+    payload: { tasks }
+  };
+}
+
 function mapTaskById(tasks: Task[], id: string, updater: (task: Task) => Task): Task[] {
   return tasks.map((task) => (task.id === id ? updater(task) : task));
 }
@@ -273,6 +291,13 @@ export function tasksReducer(state: TasksState = initialTasksState, action: AnyT
       };
     }
 
+    case TASK_ACTIONS.IMPORT: {
+      return {
+        ...state,
+        tasks: (action as ImportTasksAction).payload.tasks
+      };
+    }
+
     default:
       return state;
   }
@@ -340,6 +365,26 @@ function migrateTasksPayload(payload: unknown): unknown[] {
   }
 
   return [];
+}
+
+function isImportShape(rawValue: unknown): boolean {
+  if (Array.isArray(rawValue)) {
+    return true;
+  }
+
+  if (!isObject(rawValue)) {
+    return false;
+  }
+
+  if (Array.isArray(rawValue.tasks)) {
+    return true;
+  }
+
+  if (!('version' in rawValue)) {
+    return false;
+  }
+
+  return isObject(rawValue.payload) && Array.isArray(rawValue.payload.tasks);
 }
 
 function migratePersistedState(rawPersistedState: unknown): LoadTasksStateResult {
@@ -435,6 +480,37 @@ export function persistTasksState(state: TasksState, storage?: StorageLike | nul
   } catch {
     // localStorage quota/security failures should not crash the app
   }
+}
+
+export function exportTasksJson(state: TasksState): string {
+  const normalizedState: TasksState = {
+    tasks: Array.isArray(state?.tasks) ? state.tasks : []
+  };
+
+  return JSON.stringify(
+    {
+      version: TASKS_STORAGE_VERSION,
+      payload: normalizedState
+    },
+    null,
+    2
+  );
+}
+
+export function importTasksFromJson(rawJson: string): Task[] {
+  let parsed: unknown;
+
+  try {
+    parsed = JSON.parse(rawJson);
+  } catch {
+    throw new Error('Invalid JSON file');
+  }
+
+  if (!isImportShape(parsed)) {
+    throw new Error('Unsupported import format. Expected tasks JSON export.');
+  }
+
+  return migratePersistedState(parsed).state.tasks;
 }
 
 export function createTasksStore(initialState: TasksState = initialTasksState): {
