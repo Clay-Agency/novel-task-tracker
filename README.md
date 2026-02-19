@@ -120,3 +120,9 @@ Use the quick manual checklist at [`docs/qa/responsive-qa-checklist.md`](./docs/
 
 ## Pilot readiness + cross-browser QA plan (Issue #27)
 Use the pilot gate checklist and browser/device validation plan at [`docs/qa/pilot-readiness-cross-browser-plan.md`](./docs/qa/pilot-readiness-cross-browser-plan.md).
+
+## Pilot onboarding packet + demo script (Issue #30)
+Use these docs for pilot participant onboarding, live walkthroughs, and structured feedback capture:
+- [`docs/pilot/onboarding.md`](./docs/pilot/onboarding.md)
+- [`docs/pilot/demo-script.md`](./docs/pilot/demo-script.md)
+- [`docs/pilot/feedback-questions.md`](./docs/pilot/feedback-questions.md)
