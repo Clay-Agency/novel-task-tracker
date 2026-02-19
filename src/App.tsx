@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { useEffect, useMemo, useReducer, useRef, useState, type FormEvent } from 'react';
 import './App.css';
-import { TASK_CONTEXT, TASK_ENERGY, TASK_PRIORITY } from './domain/task';
+import { TASK_CONTEXT, TASK_ENERGY, TASK_PRIORITY, TASK_STATUS, type Task, type TaskContext, type TaskEnergy } from './domain/task';
 import { buildNowQueue } from './domain/tefq';
 import {
   completeTaskAction,
@@ -17,41 +17,44 @@ const STATUS_FILTERS = {
   ALL: 'all',
   OPEN: 'open',
   COMPLETED: 'completed'
-};
+} as const;
 
 const SORT_OPTIONS = {
   UPDATED_DESC: 'updated-desc',
   CREATED_DESC: 'created-desc',
   CREATED_ASC: 'created-asc',
   TITLE_ASC: 'title-asc'
-};
+} as const;
 
-const TASK_DURATION_OPTIONS = [5, 15, 30, 60, 90];
-const NOW_TIME_PRESETS = [15, 30, 60, 120];
+type StatusFilter = (typeof STATUS_FILTERS)[keyof typeof STATUS_FILTERS];
+type SortOption = (typeof SORT_OPTIONS)[keyof typeof SORT_OPTIONS];
 
-const CONTEXT_OPTIONS = [
+const TASK_DURATION_OPTIONS = [5, 15, 30, 60, 90] as const;
+const NOW_TIME_PRESETS = [15, 30, 60, 120] as const;
+
+const CONTEXT_OPTIONS: { value: TaskContext; label: string }[] = [
   { value: TASK_CONTEXT.DEEP_WORK, label: 'Deep Work' },
   { value: TASK_CONTEXT.ADMIN, label: 'Admin' },
   { value: TASK_CONTEXT.ERRANDS, label: 'Errands' },
   { value: TASK_CONTEXT.CALLS, label: 'Calls' }
 ];
 
-const ENERGY_OPTIONS = [
+const ENERGY_OPTIONS: { value: TaskEnergy; label: string }[] = [
   { value: TASK_ENERGY.LOW, label: 'Low' },
   { value: TASK_ENERGY.MEDIUM, label: 'Medium' },
   { value: TASK_ENERGY.HIGH, label: 'High' }
 ];
 
-function normalizeDescription(description) {
+function normalizeDescription(description: string): string | null {
   const trimmed = description.trim();
   return trimmed.length > 0 ? trimmed : null;
 }
 
-function normalizeSelectValue(value) {
+function normalizeSelectValue<T extends string>(value: T | ''): T | null {
   return value ? value : null;
 }
 
-function normalizeDuration(value) {
+function normalizeDuration(value: string): number | null {
   if (!value) {
     return null;
   }
@@ -60,19 +63,22 @@ function normalizeDuration(value) {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
-function formatContext(value) {
+function formatContext(value: TaskContext | null): string {
   return CONTEXT_OPTIONS.find((option) => option.value === value)?.label ?? 'No context';
 }
 
-function formatEnergy(value) {
+function formatEnergy(value: TaskEnergy | null): string {
   return ENERGY_OPTIONS.find((option) => option.value === value)?.label ?? 'Not set';
 }
 
-function byDateDesc(a, b, field) {
+function byDateDesc(a: Task, b: Task, field: 'updatedAt' | 'createdAt'): number {
   return new Date(b[field]).getTime() - new Date(a[field]).getTime();
 }
 
-function selectVisibleTasks(tasks, { query, statusFilter, sortBy }) {
+function selectVisibleTasks(
+  tasks: Task[],
+  { query, statusFilter, sortBy }: { query: string; statusFilter: StatusFilter; sortBy: SortOption }
+): Task[] {
   const normalizedQuery = query.trim().toLowerCase();
 
   const filtered = tasks.filter((task) => {
@@ -105,6 +111,10 @@ function selectVisibleTasks(tasks, { query, statusFilter, sortBy }) {
   return sorted;
 }
 
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : 'Something went wrong';
+}
+
 function App() {
   const loadResult = useMemo(() => loadTasksStateResult(), []);
   const skipInitialPersistRef = useRef(loadResult.skipInitialPersist);
@@ -113,30 +123,30 @@ function App() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState('');
-  const [priority, setPriority] = useState(TASK_PRIORITY.NORMAL);
+  const [priority, setPriority] = useState<(typeof TASK_PRIORITY)[keyof typeof TASK_PRIORITY]>(TASK_PRIORITY.NORMAL);
   const [estimatedDurationMin, setEstimatedDurationMin] = useState('');
-  const [energy, setEnergy] = useState('');
-  const [context, setContext] = useState('');
+  const [energy, setEnergy] = useState<TaskEnergy | ''>('');
+  const [context, setContext] = useState<TaskContext | ''>('');
   const [createError, setCreateError] = useState('');
 
   const [query, setQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState(STATUS_FILTERS.ALL);
-  const [sortBy, setSortBy] = useState(SORT_OPTIONS.UPDATED_DESC);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(STATUS_FILTERS.ALL);
+  const [sortBy, setSortBy] = useState<SortOption>(SORT_OPTIONS.UPDATED_DESC);
 
-  const [editingTaskId, setEditingTaskId] = useState(null);
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [editDueDate, setEditDueDate] = useState('');
-  const [editPriority, setEditPriority] = useState(TASK_PRIORITY.NORMAL);
+  const [editPriority, setEditPriority] = useState<(typeof TASK_PRIORITY)[keyof typeof TASK_PRIORITY]>(TASK_PRIORITY.NORMAL);
   const [editDuration, setEditDuration] = useState('');
-  const [editEnergy, setEditEnergy] = useState('');
-  const [editContext, setEditContext] = useState('');
+  const [editEnergy, setEditEnergy] = useState<TaskEnergy | ''>('');
+  const [editContext, setEditContext] = useState<TaskContext | ''>('');
   const [editError, setEditError] = useState('');
 
-  const [availableTimePreset, setAvailableTimePreset] = useState('30');
+  const [availableTimePreset, setAvailableTimePreset] = useState<string>('30');
   const [availableTimeCustom, setAvailableTimeCustom] = useState('');
-  const [nowEnergy, setNowEnergy] = useState(TASK_ENERGY.MEDIUM);
-  const [nowContext, setNowContext] = useState('');
+  const [nowEnergy, setNowEnergy] = useState<TaskEnergy>(TASK_ENERGY.MEDIUM);
+  const [nowContext, setNowContext] = useState<TaskContext | ''>('');
 
   useEffect(() => {
     if (skipInitialPersistRef.current) {
@@ -157,7 +167,8 @@ function App() {
     [query, sortBy, state.tasks, statusFilter]
   );
 
-  const effectiveAvailableTimeMin = availableTimePreset === 'custom' ? normalizeDuration(availableTimeCustom) ?? 30 : Number(availableTimePreset);
+  const effectiveAvailableTimeMin =
+    availableTimePreset === 'custom' ? normalizeDuration(availableTimeCustom) ?? 30 : Number(availableTimePreset);
 
   const nowQueue = useMemo(
     () =>
@@ -169,7 +180,7 @@ function App() {
     [effectiveAvailableTimeMin, nowContext, nowEnergy, state.tasks]
   );
 
-  function handleCreate(event) {
+  function handleCreate(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
 
     try {
@@ -192,12 +203,12 @@ function App() {
       setEnergy('');
       setContext('');
       setCreateError('');
-    } catch (error) {
-      setCreateError(error.message);
+    } catch (error: unknown) {
+      setCreateError(getErrorMessage(error));
     }
   }
 
-  function startEdit(task) {
+  function startEdit(task: Task): void {
     setEditingTaskId(task.id);
     setEditTitle(task.title);
     setEditDescription(task.description ?? '');
@@ -209,7 +220,7 @@ function App() {
     setEditError('');
   }
 
-  function cancelEdit() {
+  function cancelEdit(): void {
     setEditingTaskId(null);
     setEditTitle('');
     setEditDescription('');
@@ -221,7 +232,7 @@ function App() {
     setEditError('');
   }
 
-  function saveEdit(taskId) {
+  function saveEdit(taskId: string): void {
     try {
       dispatch(
         editTaskAction({
@@ -236,14 +247,14 @@ function App() {
         })
       );
       cancelEdit();
-    } catch (error) {
-      setEditError(error.message);
+    } catch (error: unknown) {
+      setEditError(getErrorMessage(error));
     }
   }
 
-  function toggleCompleted(task) {
+  function toggleCompleted(task: Task): void {
     dispatch(
-      task.status === 'completed' ? reopenTaskAction({ id: task.id }) : completeTaskAction({ id: task.id })
+      task.status === TASK_STATUS.COMPLETED ? reopenTaskAction({ id: task.id }) : completeTaskAction({ id: task.id })
     );
   }
 
@@ -280,7 +291,7 @@ function App() {
           ) : null}
 
           <label htmlFor="now-energy">Current energy</label>
-          <select id="now-energy" value={nowEnergy} onChange={(event) => setNowEnergy(event.target.value)}>
+          <select id="now-energy" value={nowEnergy} onChange={(event) => setNowEnergy(event.target.value as TaskEnergy)}>
             {ENERGY_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
@@ -289,7 +300,7 @@ function App() {
           </select>
 
           <label htmlFor="now-context">Context (optional)</label>
-          <select id="now-context" value={nowContext} onChange={(event) => setNowContext(event.target.value)}>
+          <select id="now-context" value={nowContext} onChange={(event) => setNowContext(event.target.value as TaskContext | '')}>
             <option value="">Any context</option>
             {CONTEXT_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
@@ -388,7 +399,7 @@ function App() {
 
             <div>
               <label htmlFor="task-priority">Priority</label>
-              <select id="task-priority" value={priority} onChange={(event) => setPriority(event.target.value)}>
+              <select id="task-priority" value={priority} onChange={(event) => setPriority(event.target.value as typeof priority)}>
                 <option value={TASK_PRIORITY.NORMAL}>Normal</option>
                 <option value={TASK_PRIORITY.HIGH}>High</option>
               </select>
@@ -412,7 +423,7 @@ function App() {
 
             <div>
               <label htmlFor="task-energy">Energy required</label>
-              <select id="task-energy" value={energy} onChange={(event) => setEnergy(event.target.value)}>
+              <select id="task-energy" value={energy} onChange={(event) => setEnergy(event.target.value as TaskEnergy | '')}>
                 <option value="">Not set</option>
                 {ENERGY_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -424,7 +435,7 @@ function App() {
 
             <div>
               <label htmlFor="task-context">Context</label>
-              <select id="task-context" value={context} onChange={(event) => setContext(event.target.value)}>
+              <select id="task-context" value={context} onChange={(event) => setContext(event.target.value as TaskContext | '')}>
                 <option value="">No context</option>
                 {CONTEXT_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -460,7 +471,7 @@ function App() {
           <select
             id="status-filter"
             value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value)}
+            onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}
           >
             <option value={STATUS_FILTERS.ALL}>All</option>
             <option value={STATUS_FILTERS.OPEN}>Open</option>
@@ -468,7 +479,7 @@ function App() {
           </select>
 
           <label htmlFor="sort-by">Sort</label>
-          <select id="sort-by" value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
+          <select id="sort-by" value={sortBy} onChange={(event) => setSortBy(event.target.value as SortOption)}>
             <option value={SORT_OPTIONS.UPDATED_DESC}>Recently updated</option>
             <option value={SORT_OPTIONS.CREATED_DESC}>Newest first</option>
             <option value={SORT_OPTIONS.CREATED_ASC}>Oldest first</option>
@@ -487,7 +498,7 @@ function App() {
         <ul className="task-list" aria-label="Task list">
           {visibleTasks.map((task) => {
             const isEditing = editingTaskId === task.id;
-            const isCompleted = task.status === 'completed';
+            const isCompleted = task.status === TASK_STATUS.COMPLETED;
 
             return (
               <li key={task.id} className={`task-item ${isCompleted ? 'task-item--completed' : 'task-item--open'}`}>
@@ -524,7 +535,7 @@ function App() {
                         <select
                           id={`edit-priority-${task.id}`}
                           value={editPriority}
-                          onChange={(event) => setEditPriority(event.target.value)}
+                          onChange={(event) => setEditPriority(event.target.value as typeof editPriority)}
                         >
                           <option value={TASK_PRIORITY.NORMAL}>Normal</option>
                           <option value={TASK_PRIORITY.HIGH}>High</option>
@@ -552,7 +563,7 @@ function App() {
                         <select
                           id={`edit-energy-${task.id}`}
                           value={editEnergy}
-                          onChange={(event) => setEditEnergy(event.target.value)}
+                          onChange={(event) => setEditEnergy(event.target.value as TaskEnergy | '')}
                         >
                           <option value="">Not set</option>
                           {ENERGY_OPTIONS.map((option) => (
@@ -568,7 +579,7 @@ function App() {
                         <select
                           id={`edit-context-${task.id}`}
                           value={editContext}
-                          onChange={(event) => setEditContext(event.target.value)}
+                          onChange={(event) => setEditContext(event.target.value as TaskContext | '')}
                         >
                           <option value="">No context</option>
                           {CONTEXT_OPTIONS.map((option) => (

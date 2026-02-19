@@ -27,6 +27,7 @@ npm run start
 ## Quality checks
 ```bash
 npm run lint
+npm run typecheck
 npm run test
 ```
 
@@ -40,6 +41,7 @@ Core test scope and checklist live in [`docs/testing/core-test-strategy.md`](./d
 
 Gate must pass before merge:
 - `npm run lint`
+- `npm run typecheck`
 - `npm test`
 - Unit coverage for task domain/reducer/persistence logic
 - UI integration coverage for CRUD + search/filter/sort + persistence

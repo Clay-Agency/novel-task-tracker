@@ -9,7 +9,12 @@ import {
   normalizeEnergy,
   normalizeEstimatedDurationMin,
   normalizePriority,
-  normalizeTitle
+  normalizeTitle,
+  type CreateTaskInput,
+  type Task,
+  type TaskContext,
+  type TaskEnergy,
+  type TaskPriority
 } from '../domain/task';
 
 export const TASK_ACTIONS = {
@@ -18,19 +23,79 @@ export const TASK_ACTIONS = {
   COMPLETE: 'tasks/complete',
   REOPEN: 'tasks/reopen',
   DELETE: 'tasks/delete'
-};
+} as const;
 
 export const TASKS_STORAGE_KEY = 'novel-task-tracker/tasks';
 export const TASKS_STORAGE_VERSION = 2;
 
-export const initialTasksState = {
+export interface TasksState {
+  tasks: Task[];
+}
+
+export const initialTasksState: TasksState = {
   tasks: []
 };
 
-const defaultLoadResult = {
+export interface LoadTasksStateResult {
+  state: TasksState;
+  skipInitialPersist: boolean;
+}
+
+const defaultLoadResult: LoadTasksStateResult = {
   state: initialTasksState,
   skipInitialPersist: false
 };
+
+type CreateTaskAction = {
+  type: (typeof TASK_ACTIONS)['CREATE'];
+  payload: Task;
+};
+
+type EditTaskPayload = {
+  id: string;
+  now: string;
+  title?: string;
+  description?: string | null;
+  dueDate?: string | null;
+  priority?: TaskPriority;
+  estimatedDurationMin?: number | string | null;
+  energy?: TaskEnergy | null;
+  context?: TaskContext | null;
+};
+
+type EditTaskAction = {
+  type: (typeof TASK_ACTIONS)['EDIT'];
+  payload: EditTaskPayload;
+};
+
+type IdActionPayload = {
+  id: string;
+  now: string;
+};
+
+type CompleteTaskAction = {
+  type: (typeof TASK_ACTIONS)['COMPLETE'];
+  payload: IdActionPayload;
+};
+
+type ReopenTaskAction = {
+  type: (typeof TASK_ACTIONS)['REOPEN'];
+  payload: IdActionPayload;
+};
+
+type DeleteTaskAction = {
+  type: (typeof TASK_ACTIONS)['DELETE'];
+  payload: { id: string };
+};
+
+export type TasksAction =
+  | CreateTaskAction
+  | EditTaskAction
+  | CompleteTaskAction
+  | ReopenTaskAction
+  | DeleteTaskAction;
+
+export type AnyTasksAction = TasksAction | { type: string };
 
 export function createTaskAction({
   title,
@@ -42,10 +107,10 @@ export function createTaskAction({
   context = null,
   now,
   id
-} = {}) {
+}: Partial<CreateTaskInput> = {}): CreateTaskAction {
   return {
     type: TASK_ACTIONS.CREATE,
-    payload: createTask({ title, description, dueDate, priority, estimatedDurationMin, energy, context, now, id })
+    payload: createTask({ title: title ?? '', description, dueDate, priority, estimatedDurationMin, energy, context, now, id })
   };
 }
 
@@ -59,7 +124,17 @@ export function editTaskAction({
   energy,
   context,
   now = new Date().toISOString()
-} = {}) {
+}: {
+  id?: string;
+  title?: string;
+  description?: string | null;
+  dueDate?: string | null;
+  priority?: TaskPriority;
+  estimatedDurationMin?: number | string | null;
+  energy?: TaskEnergy | null;
+  context?: TaskContext | null;
+  now?: string;
+} = {}): EditTaskAction {
   if (!id) {
     throw new Error('Task id is required');
   }
@@ -84,7 +159,7 @@ export function editTaskAction({
   };
 }
 
-export function completeTaskAction({ id, now = new Date().toISOString() } = {}) {
+export function completeTaskAction({ id, now = new Date().toISOString() }: { id?: string; now?: string } = {}): CompleteTaskAction {
   if (!id) {
     throw new Error('Task id is required');
   }
@@ -95,7 +170,7 @@ export function completeTaskAction({ id, now = new Date().toISOString() } = {}) 
   };
 }
 
-export function reopenTaskAction({ id, now = new Date().toISOString() } = {}) {
+export function reopenTaskAction({ id, now = new Date().toISOString() }: { id?: string; now?: string } = {}): ReopenTaskAction {
   if (!id) {
     throw new Error('Task id is required');
   }
@@ -106,7 +181,7 @@ export function reopenTaskAction({ id, now = new Date().toISOString() } = {}) {
   };
 }
 
-export function deleteTaskAction({ id } = {}) {
+export function deleteTaskAction({ id }: { id?: string } = {}): DeleteTaskAction {
   if (!id) {
     throw new Error('Task id is required');
   }
@@ -117,20 +192,22 @@ export function deleteTaskAction({ id } = {}) {
   };
 }
 
-function mapTaskById(tasks, id, updater) {
+function mapTaskById(tasks: Task[], id: string, updater: (task: Task) => Task): Task[] {
   return tasks.map((task) => (task.id === id ? updater(task) : task));
 }
 
-export function tasksReducer(state = initialTasksState, action = {}) {
+export function tasksReducer(state: TasksState = initialTasksState, action: AnyTasksAction): TasksState {
   switch (action.type) {
-    case TASK_ACTIONS.CREATE:
+    case TASK_ACTIONS.CREATE: {
+      const createAction = action as CreateTaskAction;
       return {
         ...state,
-        tasks: [...state.tasks, action.payload]
+        tasks: [...state.tasks, createAction.payload]
       };
+    }
 
     case TASK_ACTIONS.EDIT: {
-      const { id, now, title, description, dueDate, priority, estimatedDurationMin, energy, context } = action.payload;
+      const { id, now, title, description, dueDate, priority, estimatedDurationMin, energy, context } = (action as EditTaskAction).payload;
       return {
         ...state,
         tasks: mapTaskById(state.tasks, id, (task) => ({
@@ -151,7 +228,7 @@ export function tasksReducer(state = initialTasksState, action = {}) {
     }
 
     case TASK_ACTIONS.COMPLETE: {
-      const { id, now } = action.payload;
+      const { id, now } = (action as CompleteTaskAction).payload;
       return {
         ...state,
         tasks: mapTaskById(state.tasks, id, (task) => {
@@ -170,7 +247,7 @@ export function tasksReducer(state = initialTasksState, action = {}) {
     }
 
     case TASK_ACTIONS.REOPEN: {
-      const { id, now } = action.payload;
+      const { id, now } = (action as ReopenTaskAction).payload;
       return {
         ...state,
         tasks: mapTaskById(state.tasks, id, (task) => {
@@ -189,7 +266,7 @@ export function tasksReducer(state = initialTasksState, action = {}) {
     }
 
     case TASK_ACTIONS.DELETE: {
-      const { id } = action.payload;
+      const { id } = (action as DeleteTaskAction).payload;
       return {
         ...state,
         tasks: state.tasks.filter((task) => task.id !== id)
@@ -201,11 +278,11 @@ export function tasksReducer(state = initialTasksState, action = {}) {
   }
 }
 
-function isObject(value) {
+function isObject(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
-function normalizeDescription(description) {
+function normalizeDescription(description: unknown): string | null {
   if (typeof description !== 'string') {
     return null;
   }
@@ -214,7 +291,7 @@ function normalizeDescription(description) {
   return trimmed.length > 0 ? trimmed : null;
 }
 
-function normalizeStoredTask(rawTask) {
+function normalizeStoredTask(rawTask: unknown): Task | null {
   if (!isObject(rawTask)) {
     return null;
   }
@@ -253,7 +330,7 @@ function normalizeStoredTask(rawTask) {
   };
 }
 
-function migrateTasksPayload(payload) {
+function migrateTasksPayload(payload: unknown): unknown[] {
   if (Array.isArray(payload)) {
     return payload;
   }
@@ -265,7 +342,7 @@ function migrateTasksPayload(payload) {
   return [];
 }
 
-function migratePersistedState(rawPersistedState) {
+function migratePersistedState(rawPersistedState: unknown): LoadTasksStateResult {
   if (!rawPersistedState) {
     return defaultLoadResult;
   }
@@ -283,17 +360,24 @@ function migratePersistedState(rawPersistedState) {
   }
 
   const rawTasks =
-    version === 0 ? migrateTasksPayload(rawPersistedState) : migrateTasksPayload(rawPersistedState.payload);
+    version === 0
+      ? migrateTasksPayload(rawPersistedState)
+      : migrateTasksPayload(isObject(rawPersistedState) ? rawPersistedState.payload : null);
 
   return {
     state: {
-      tasks: rawTasks.map(normalizeStoredTask).filter(Boolean)
+      tasks: rawTasks.map(normalizeStoredTask).filter((task): task is Task => task !== null)
     },
     skipInitialPersist: false
   };
 }
 
-function resolveStorage(storage) {
+interface StorageLike {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+}
+
+function resolveStorage(storage?: StorageLike | null): StorageLike | null {
   if (storage !== undefined) {
     return storage;
   }
@@ -305,7 +389,7 @@ function resolveStorage(storage) {
   }
 }
 
-export function loadTasksStateResult(storage) {
+export function loadTasksStateResult(storage?: StorageLike | null): LoadTasksStateResult {
   const resolvedStorage = resolveStorage(storage);
 
   if (!resolvedStorage || typeof resolvedStorage.getItem !== 'function') {
@@ -325,18 +409,18 @@ export function loadTasksStateResult(storage) {
   }
 }
 
-export function loadTasksState(storage) {
+export function loadTasksState(storage?: StorageLike | null): TasksState {
   return loadTasksStateResult(storage).state;
 }
 
-export function persistTasksState(state, storage) {
+export function persistTasksState(state: TasksState, storage?: StorageLike | null): void {
   const resolvedStorage = resolveStorage(storage);
 
   if (!resolvedStorage || typeof resolvedStorage.setItem !== 'function') {
     return;
   }
 
-  const normalizedState = {
+  const normalizedState: TasksState = {
     tasks: Array.isArray(state?.tasks) ? state.tasks : []
   };
 
@@ -353,7 +437,10 @@ export function persistTasksState(state, storage) {
   }
 }
 
-export function createTasksStore(initialState = initialTasksState) {
+export function createTasksStore(initialState: TasksState = initialTasksState): {
+  getState: () => TasksState;
+  dispatch: (action: TasksAction) => TasksAction;
+} {
   let state = initialState;
 
   return {
