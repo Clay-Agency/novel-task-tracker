@@ -20,7 +20,6 @@ permissions:
   contents: read
   issues: read
   pull-requests: read
-  repository-projects: write
 
 concurrency:
   group: project-status-sync
@@ -33,10 +32,28 @@ jobs:
       ORG_LOGIN: Clay-Agency
       PROJECT_NUMBER: '1'
     steps:
+      - name: Create GitHub App token (preferred)
+        id: app-token
+        if: ${{ (vars.PROJECTS_APP_ID != '' || secrets.PROJECTS_APP_ID != '') && secrets.PROJECTS_APP_PRIVATE_KEY != '' }}
+        uses: actions/create-github-app-token@v2
+        continue-on-error: true
+        with:
+          app-id: ${{ vars.PROJECTS_APP_ID || secrets.PROJECTS_APP_ID }}
+          private-key: ${{ secrets.PROJECTS_APP_PRIVATE_KEY }}
+          owner: ${{ env.ORG_LOGIN }}
+          repositories: ${{ github.event.repository.name }}
+
+      - name: Skip (no Projects v2 token configured)
+        if: ${{ steps.app-token.outputs.token == '' && secrets.PROJECT_STATUS_SYNC_TOKEN == '' }}
+        run: echo "No Projects v2 auth token configured; skipping."
+
       - name: Sync Project item fields (Status / Done date / Needs decision)
         uses: actions/github-script@v7
+        if: ${{ steps.app-token.outputs.token != '' || secrets.PROJECT_STATUS_SYNC_TOKEN != '' }}
         with:
-          github-token: ${{ secrets.PROJECT_STATUS_SYNC_TOKEN || secrets.GITHUB_TOKEN }}
+          # NOTE: Projects v2 (org ProjectV2) cannot be mutated with the built-in GITHUB_TOKEN.
+          # Provide either a GitHub App token (preferred) or a PAT.
+          github-token: ${{ steps.app-token.outputs.token || secrets.PROJECT_STATUS_SYNC_TOKEN }}
           script: |
             const orgLogin = process.env.ORG_LOGIN;
             const projectNumber = Number(process.env.PROJECT_NUMBER);
@@ -363,10 +380,7 @@ jobs:
             try {
               meta = await getProjectMetadata();
             } catch (e) {
-              core.warning(`Project metadata unavailable; skipping Project sync. ${e?.message || e}`);
-              core.warning(
-                'If org project permissions block GITHUB_TOKEN, set PROJECT_STATUS_SYNC_TOKEN (PAT) as an optional fallback.'
-              );
+              core.info(`Project metadata unavailable; skipping Project sync. ${e?.message || e}`);
               return;
             }
             if (reconcile) {
