@@ -1,43 +1,23 @@
-# Project status sync (Clay Project #1)
+# Project status sync workflow (Issue #78)
 
-This repo uses a low-noise GitHub Action to keep **Clay-Agency Project #1** in sync when work completes.
+The repo includes a GitHub Actions workflow: `.github/workflows/project-status-sync.yml`.
 
-## What it does
+It syncs Clay Project (ProjectV2) fields when:
+- an issue is closed
+- a PR is closed (only acts when merged)
+- on a daily scheduled reconciliation
+- manually via `workflow_dispatch`
 
-When an item in Project #1 is closed/merged, the workflow updates the corresponding Project item fields:
+## Token / permissions
 
-- **Merged PRs** → `Status = Done`, `Done date = mergedAt` (YYYY-MM-DD)
-- **Closed issues** → `Status = Done`, `Done date = closedAt` (YYYY-MM-DD)
-- Clears **Needs decision** (sets to `false` when the field is a boolean; otherwise tries to select a "No/False" option)
+`GITHUB_TOKEN` often **cannot** read/write ProjectV2 items unless the project grants access to GitHub Actions.
 
-## How it runs
+To ensure the workflow can access the project reliably, create a PAT and store it as:
 
-Workflow: `.github/workflows/project-status-sync.yml`
+- **Secret name**: `PROJECT_STATUS_SYNC_TOKEN`
 
-Triggers:
+Recommended scopes:
+- **Fine-grained PAT**: Projects **Read and write** (and access to this repository)
+- **Classic PAT**: `project` (and `repo` if required by your org settings)
 
-- `pull_request.closed` (only acts when `merged == true`)
-- `issues.closed`
-- `schedule` (daily reconciliation) to catch cases where an issue/PR is added to the project after it was already closed.
-- `workflow_dispatch` (manual run)
-
-## Permissions / secrets
-
-- Uses the built-in `GITHUB_TOKEN`.
-- Workflow permissions:
-  - `projects: write`
-  - `issues: read`
-  - `pull-requests: read`
-  - `contents: read`
-
-No additional secrets are required.
-
-## Notes / limitations
-
-- The workflow only updates items that are already in **Clay-Agency Project #1**.
-- It assumes the project has fields named:
-  - `Status` (single-select with an option named `Done`)
-  - `Done date` (date field)
-  - `Needs decision` (boolean preferred)
-
-If the project uses different names, adjust the matching logic in the workflow script.
+If the secret is not configured (or the token can't access the project), the workflow will log a warning and exit successfully (low-noise no-op).

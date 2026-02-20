@@ -37,7 +37,7 @@ jobs:
       - name: Sync Project item fields (Status / Done date / Needs decision)
         uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.PROJECT_STATUS_SYNC_TOKEN || secrets.GITHUB_TOKEN }}
           script: |
             const owner = context.repo.owner;
             const repo = context.repo.repo;
@@ -358,7 +358,16 @@ jobs:
             }
 
             // --- Main ---
-            const meta = await getProjectMetadata();
+            let meta = null;
+            try {
+              meta = await getProjectMetadata();
+            } catch (e) {
+              core.warning(`Project metadata unavailable; skipping Project sync. ${e?.message || e}`);
+              core.warning(
+                "If this is a permissions issue, set a PAT with Project access as secret PROJECT_STATUS_SYNC_TOKEN (see README)."
+              );
+              return;
+            }
 
             if (reconcile) {
               const res = await reconcileProject(meta);
