@@ -359,7 +359,16 @@ jobs:
             }
 
             // --- Main ---
-            const meta = await getProjectMetadata();
+            let meta = null;
+            try {
+              meta = await getProjectMetadata();
+            } catch (e) {
+              core.warning(`Project metadata unavailable; skipping Project sync. ${e?.message || e}`);
+              core.warning(
+                'If org project permissions block GITHUB_TOKEN, set PROJECT_STATUS_SYNC_TOKEN (PAT) as an optional fallback.'
+              );
+              return;
+            }
             if (reconcile) {
               const res = await reconcileProject(meta);
               core.info(`Reconcile complete. scanned=${res.processed}, updated=${res.updated}, stopped=${res.stopped}`);
