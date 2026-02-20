@@ -32,7 +32,8 @@ jobs:
     env:
       ORG_LOGIN: Clay-Agency
       PROJECT_NUMBER: '1'
-      RECONCILE: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.reconcile) }}
+      # Use github.event.inputs (not the top-level 'inputs' context) so non-workflow_dispatch events don't error
+      RECONCILE: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.event.inputs.reconcile != 'false') }}
     steps:
       - name: Sync Project item fields (Status / Done date / Needs decision)
         uses: actions/github-script@v7
