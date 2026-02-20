@@ -30,7 +30,6 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     env:
-      ORG_LOGIN: Clay-Agency
       PROJECT_NUMBER: '1'
       # Use github.event.inputs (not the top-level 'inputs' context) so non-workflow_dispatch events don't error
       RECONCILE: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.event.inputs.reconcile != 'false') }}
@@ -40,7 +39,8 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const orgLogin = process.env.ORG_LOGIN;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
             const projectNumber = Number(process.env.PROJECT_NUMBER);
             const reconcile = String(process.env.RECONCILE) === 'true';
 
@@ -55,8 +55,8 @@ jobs:
 
             async function getProjectMetadata() {
               const query = `
-                query($org: String!, $number: Int!) {
-                  organization(login: $org) {
+                query($owner: String!, $repo: String!, $number: Int!) {
+                  repository(owner: $owner, name: $repo) {
                     projectV2(number: $number) {
                       id
                       title
@@ -84,10 +84,10 @@ jobs:
                 }
               `;
 
-              const res = await github.graphql(query, { org: orgLogin, number: projectNumber });
-              const project = res?.organization?.projectV2;
+              const res = await github.graphql(query, { owner, repo, number: projectNumber });
+              const project = res?.repository?.projectV2;
               if (!project?.id) {
-                throw new Error(`Could not find org projectV2 ${orgLogin}#${projectNumber}`);
+                throw new Error(`Could not find repository projectV2 ${owner}/${repo}#${projectNumber}`);
               }
 
               const fields = project.fields.nodes || [];
@@ -275,7 +275,7 @@ jobs:
             }
 
             async function reconcileProject(meta) {
-              core.info(`Reconciling items in ${orgLogin} Project #${projectNumber} (${meta.projectTitle})`);
+              core.info(`Reconciling items in ${owner}/${repo} Project #${projectNumber} (${meta.projectTitle})`);
 
               const query = `
                 query($projectId: ID!, $after: String) {
