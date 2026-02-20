@@ -32,24 +32,45 @@ jobs:
       ORG_LOGIN: Clay-Agency
       PROJECT_NUMBER: '1'
     steps:
+      - name: Resolve Projects v2 auth configuration
+        id: auth
+        shell: bash
+        env:
+          PROJECTS_APP_ID: ${{ vars.PROJECTS_APP_ID || secrets.PROJECTS_APP_ID }}
+          PROJECTS_APP_PRIVATE_KEY: ${{ secrets.PROJECTS_APP_PRIVATE_KEY }}
+          PROJECT_STATUS_SYNC_TOKEN: ${{ secrets.PROJECT_STATUS_SYNC_TOKEN }}
+        run: |
+          if [ -n "$PROJECTS_APP_ID" ] && [ -n "$PROJECTS_APP_PRIVATE_KEY" ]; then
+            echo "use_app=true" >> "$GITHUB_OUTPUT"
+            echo "app_id=$PROJECTS_APP_ID" >> "$GITHUB_OUTPUT"
+          else
+            echo "use_app=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          if [ -n "$PROJECT_STATUS_SYNC_TOKEN" ]; then
+            echo "has_pat=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_pat=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Create GitHub App token (preferred)
         id: app-token
-        if: ${{ (vars.PROJECTS_APP_ID != '' || secrets.PROJECTS_APP_ID != '') && secrets.PROJECTS_APP_PRIVATE_KEY != '' }}
+        if: ${{ steps.auth.outputs.use_app == 'true' }}
         uses: actions/create-github-app-token@v2
         continue-on-error: true
         with:
-          app-id: ${{ vars.PROJECTS_APP_ID || secrets.PROJECTS_APP_ID }}
+          app-id: ${{ steps.auth.outputs.app_id }}
           private-key: ${{ secrets.PROJECTS_APP_PRIVATE_KEY }}
           owner: ${{ env.ORG_LOGIN }}
           repositories: ${{ github.event.repository.name }}
 
       - name: Skip (no Projects v2 token configured)
-        if: ${{ steps.app-token.outputs.token == '' && secrets.PROJECT_STATUS_SYNC_TOKEN == '' }}
+        if: ${{ steps.app-token.outputs.token == '' && steps.auth.outputs.has_pat != 'true' }}
         run: echo "No Projects v2 auth token configured; skipping."
 
       - name: Sync Project item fields (Status / Done date / Needs decision)
         uses: actions/github-script@v7
-        if: ${{ steps.app-token.outputs.token != '' || secrets.PROJECT_STATUS_SYNC_TOKEN != '' }}
+        if: ${{ steps.app-token.outputs.token != '' || steps.auth.outputs.has_pat == 'true' }}
         with:
           # NOTE: Projects v2 (org ProjectV2) cannot be mutated with the built-in GITHUB_TOKEN.
           # Provide either a GitHub App token (preferred) or a PAT.
