@@ -2,7 +2,7 @@
 
 The repo includes a GitHub Actions workflow: `.github/workflows/project-status-sync.yml`.
 
-It syncs Clay Project (ProjectV2) fields when:
+It syncs **Clay-Agency org Project #1** (ProjectV2) fields when:
 - an issue is closed
 - a PR is closed (only acts when merged)
 - on a daily scheduled reconciliation
@@ -10,9 +10,9 @@ It syncs Clay Project (ProjectV2) fields when:
 
 ## Token / permissions
 
-`GITHUB_TOKEN` often **cannot** read/write ProjectV2 items unless the project grants access to GitHub Actions.
+By default the workflow uses GitHub Actions’ built-in `GITHUB_TOKEN`.
 
-To ensure the workflow can access the project reliably, create a PAT and store it as:
+If your org/project settings prevent `GITHUB_TOKEN` from reading/writing org Projects (ProjectV2), you can optionally provide a PAT as a fallback:
 
 - **Secret name**: `PROJECT_STATUS_SYNC_TOKEN`
 
@@ -20,4 +20,4 @@ Recommended scopes:
 - **Fine-grained PAT**: Projects **Read and write** (and access to this repository)
 - **Classic PAT**: `project` (and `repo` if required by your org settings)
 
-If the secret is not configured (or the token can't access the project), the workflow will log a warning and exit successfully (low-noise no-op).
+If neither token can access the org project, the workflow will fail with a GraphQL NOT_FOUND / “Could not resolve to a ProjectV2…” error.
