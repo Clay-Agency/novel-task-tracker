@@ -20,7 +20,7 @@ permissions:
   contents: read
   issues: read
   pull-requests: read
-  projects: write
+  repository-projects: write
 
 concurrency:
   group: project-status-sync
