@@ -20,7 +20,6 @@ permissions:
   contents: read
   issues: read
   pull-requests: read
-  projects: write
 
 concurrency:
   group: project-status-sync
@@ -32,16 +31,57 @@ jobs:
     env:
       ORG_LOGIN: Clay-Agency
       PROJECT_NUMBER: '1'
-      RECONCILE: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.reconcile) }}
     steps:
+      - name: Resolve Projects v2 auth configuration
+        id: auth
+        shell: bash
+        env:
+          PROJECTS_APP_ID: ${{ vars.PROJECTS_APP_ID || secrets.PROJECTS_APP_ID }}
+          PROJECTS_APP_PRIVATE_KEY: ${{ secrets.PROJECTS_APP_PRIVATE_KEY }}
+          PROJECT_STATUS_SYNC_TOKEN: ${{ secrets.PROJECT_STATUS_SYNC_TOKEN }}
+        run: |
+          if [ -n "$PROJECTS_APP_ID" ] && [ -n "$PROJECTS_APP_PRIVATE_KEY" ]; then
+            echo "use_app=true" >> "$GITHUB_OUTPUT"
+            echo "app_id=$PROJECTS_APP_ID" >> "$GITHUB_OUTPUT"
+          else
+            echo "use_app=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          if [ -n "$PROJECT_STATUS_SYNC_TOKEN" ]; then
+            echo "has_pat=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_pat=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create GitHub App token (preferred)
+        id: app-token
+        if: ${{ steps.auth.outputs.use_app == 'true' }}
+        uses: actions/create-github-app-token@v2
+        continue-on-error: true
+        with:
+          app-id: ${{ steps.auth.outputs.app_id }}
+          private-key: ${{ secrets.PROJECTS_APP_PRIVATE_KEY }}
+          owner: ${{ env.ORG_LOGIN }}
+          repositories: ${{ github.event.repository.name }}
+
+      - name: Skip (no Projects v2 token configured)
+        if: ${{ steps.app-token.outputs.token == '' && steps.auth.outputs.has_pat != 'true' }}
+        run: echo "No Projects v2 auth token configured; skipping."
+
       - name: Sync Project item fields (Status / Done date / Needs decision)
         uses: actions/github-script@v7
+        if: ${{ steps.app-token.outputs.token != '' || steps.auth.outputs.has_pat == 'true' }}
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          # NOTE: Projects v2 (org ProjectV2) cannot be mutated with the built-in GITHUB_TOKEN.
+          # Provide either a GitHub App token (preferred) or a PAT.
+          github-token: ${{ steps.app-token.outputs.token || secrets.PROJECT_STATUS_SYNC_TOKEN }}
           script: |
             const orgLogin = process.env.ORG_LOGIN;
             const projectNumber = Number(process.env.PROJECT_NUMBER);
-            const reconcile = String(process.env.RECONCILE) === 'true';
+            const reconcile =
+              context.eventName === 'schedule' ||
+              (context.eventName === 'workflow_dispatch' &&
+                String(context.payload?.inputs?.reconcile ?? 'true') !== 'false');
 
             const normalize = (s) => String(s || '').trim().toLowerCase();
 
@@ -357,8 +397,13 @@ jobs:
             }
 
             // --- Main ---
-            const meta = await getProjectMetadata();
-
+            let meta = null;
+            try {
+              meta = await getProjectMetadata();
+            } catch (e) {
+              core.info(`Project metadata unavailable; skipping Project sync. ${e?.message || e}`);
+              return;
+            }
             if (reconcile) {
               const res = await reconcileProject(meta);
               core.info(`Reconcile complete. scanned=${res.processed}, updated=${res.updated}, stopped=${res.stopped}`);

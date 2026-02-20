@@ -1,43 +1,43 @@
-# Project status sync (Clay Project #1)
+# Project status sync workflow (Issue #78)
 
-This repo uses a low-noise GitHub Action to keep **Clay-Agency Project #1** in sync when work completes.
+The repo includes a GitHub Actions workflow: `.github/workflows/project-status-sync.yml`.
 
-## What it does
+It syncs **Clay-Agency org Project #1** (Projects v2 / `ProjectV2`) fields when:
+- an issue is closed
+- a PR is closed (only acts when merged)
+- on a daily scheduled reconciliation
+- manually via `workflow_dispatch`
 
-When an item in Project #1 is closed/merged, the workflow updates the corresponding Project item fields:
+## Token / permissions (Projects v2)
 
-- **Merged PRs** → `Status = Done`, `Done date = mergedAt` (YYYY-MM-DD)
-- **Closed issues** → `Status = Done`, `Done date = closedAt` (YYYY-MM-DD)
-- Clears **Needs decision** (sets to `false` when the field is a boolean; otherwise tries to select a "No/False" option)
+GitHub’s built-in Actions token (`secrets.GITHUB_TOKEN`) **cannot** update **organization Projects v2** via GraphQL.
 
-## How it runs
+You must provide **one** of the following:
 
-Workflow: `.github/workflows/project-status-sync.yml`
+### Option A (preferred): GitHub App installation token
 
-Triggers:
+Configure a GitHub App installed on the `Clay-Agency` org with permissions that allow reading issues/PRs and **reading/writing organization projects**.
 
-- `pull_request.closed` (only acts when `merged == true`)
-- `issues.closed`
-- `schedule` (daily reconciliation) to catch cases where an issue/PR is added to the project after it was already closed.
-- `workflow_dispatch` (manual run)
+Workflow expects:
+- `PROJECTS_APP_ID` (recommended as an **Actions variable**, or a secret)
+- `PROJECTS_APP_PRIVATE_KEY` (**Actions secret**)
 
-## Permissions / secrets
+Notes:
+- The workflow uses `actions/create-github-app-token@v2` to mint an installation token at runtime.
+- Ensure the App has access to this repository (for reading PR/issue details) and to org Projects v2.
 
-- Uses the built-in `GITHUB_TOKEN`.
-- Workflow permissions:
-  - `projects: write`
-  - `issues: read`
-  - `pull-requests: read`
-  - `contents: read`
+### Option B: PAT fallback
 
-No additional secrets are required.
+If you can’t use a GitHub App, provide a PAT as a fallback:
 
-## Notes / limitations
+- **Secret name**: `PROJECT_STATUS_SYNC_TOKEN`
 
-- The workflow only updates items that are already in **Clay-Agency Project #1**.
-- It assumes the project has fields named:
-  - `Status` (single-select with an option named `Done`)
-  - `Done date` (date field)
-  - `Needs decision` (boolean preferred)
+Recommended scopes:
+- **Fine-grained PAT**: Projects **Read and write** (and access to this repository)
+- **Classic PAT**: `project` (and `repo` if required by your org settings)
 
-If the project uses different names, adjust the matching logic in the workflow script.
+## Low-noise behavior
+
+- If no App/PAT token is configured, the workflow exits successfully (no-op).
+- If the closed issue/PR is **not** in org Project #1, the workflow exits successfully (no-op).
+- If the workflow can’t read the project metadata (permissions, renamed fields, etc.), it logs an info message and exits successfully.

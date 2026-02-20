@@ -42,6 +42,9 @@ npm run build
 ## CI maintenance runbook (Issue #72)
 Weekly scheduled CI + manual dispatch procedure and failure triage: [`docs/ops/ci-maintenance-runbook.md`](./docs/ops/ci-maintenance-runbook.md).
 
+## Project status sync (Issue #78)
+Workflow behavior + token setup: [`docs/ops/project-status-sync.md`](./docs/ops/project-status-sync.md).
+
 ## Core test completion gate (Issue #12)
 Core test scope and checklist live in [`docs/testing/core-test-strategy.md`](./docs/testing/core-test-strategy.md).
 
