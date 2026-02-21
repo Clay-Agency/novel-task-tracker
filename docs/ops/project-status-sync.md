@@ -10,6 +10,8 @@ It syncs **Clay-Agency org Project #1** (Projects v2 / `ProjectV2`) fields when:
 
 ## Token / permissions (Projects v2)
 
+Detailed setup (GitHub App least-privilege, PAT fallback, troubleshooting): [`docs/ops/projects-v2-auth.md`](./projects-v2-auth.md).
+
 GitHub’s built-in Actions token (`secrets.GITHUB_TOKEN`) **cannot** update **organization Projects v2** via GraphQL.
 
 You must provide **one** of the following:
