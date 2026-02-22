@@ -1,0 +1,155 @@
+name: Projects v2 auth smoke test
+
+on:
+  workflow_dispatch:
+    inputs:
+      org:
+        description: 'GitHub organization login (default Clay-Agency)'
+        required: false
+        type: string
+        default: 'Clay-Agency'
+      project_number:
+        description: 'Org Projects v2 number (default 1)'
+        required: false
+        type: number
+        default: 1
+
+permissions:
+  contents: read
+
+concurrency:
+  group: projects-v2-auth-smoke
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    name: Query org ProjectV2 metadata (read-only)
+    runs-on: ubuntu-latest
+    env:
+      ORG_LOGIN: ${{ inputs.org || 'Clay-Agency' }}
+      PROJECT_NUMBER: ${{ inputs.project_number || 1 }}
+    steps:
+      - name: Resolve Projects v2 auth configuration
+        id: auth
+        shell: bash
+        env:
+          PROJECTS_APP_ID: ${{ vars.PROJECTS_APP_ID || secrets.PROJECTS_APP_ID }}
+          PROJECTS_APP_PRIVATE_KEY: ${{ secrets.PROJECTS_APP_PRIVATE_KEY }}
+          PROJECT_STATUS_SYNC_TOKEN: ${{ secrets.PROJECT_STATUS_SYNC_TOKEN }}
+        run: |
+          if [ -n "$PROJECTS_APP_ID" ] && [ -n "$PROJECTS_APP_PRIVATE_KEY" ]; then
+            echo "use_app=true" >> "$GITHUB_OUTPUT"
+            echo "app_id=$PROJECTS_APP_ID" >> "$GITHUB_OUTPUT"
+          else
+            echo "use_app=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          if [ -n "$PROJECT_STATUS_SYNC_TOKEN" ]; then
+            echo "has_pat=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_pat=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create GitHub App token (preferred)
+        id: app-token
+        if: ${{ steps.auth.outputs.use_app == 'true' }}
+        uses: actions/create-github-app-token@v2
+        continue-on-error: true
+        with:
+          app-id: ${{ steps.auth.outputs.app_id }}
+          private-key: ${{ secrets.PROJECTS_APP_PRIVATE_KEY }}
+          owner: ${{ env.ORG_LOGIN }}
+          repositories: ${{ github.event.repository.name }}
+
+      - name: Fail (missing Projects v2 auth)
+        if: ${{ steps.app-token.outputs.token == '' && steps.auth.outputs.has_pat != 'true' }}
+        shell: bash
+        run: |
+          echo "::error title=No Projects v2 auth token available::Configure Projects v2 auth: GitHub App (preferred) set vars.PROJECTS_APP_ID + secrets.PROJECTS_APP_PRIVATE_KEY, OR PAT set secrets.PROJECT_STATUS_SYNC_TOKEN. Docs: https://github.com/Clay-Agency/novel-task-tracker/blob/main/docs/ops/projects-v2-auth.md ; Issue #80: https://github.com/Clay-Agency/novel-task-tracker/issues/80"
+          exit 1
+
+      - name: Query ProjectV2 metadata and write summary
+        uses: actions/github-script@v7
+        if: ${{ steps.app-token.outputs.token != '' || steps.auth.outputs.has_pat == 'true' }}
+        with:
+          github-token: ${{ steps.app-token.outputs.token || secrets.PROJECT_STATUS_SYNC_TOKEN }}
+          script: |
+            const orgLogin = process.env.ORG_LOGIN;
+            const projectNumber = Number(process.env.PROJECT_NUMBER);
+
+            const query = `
+              query($org: String!, $number: Int!) {
+                organization(login: $org) {
+                  projectV2(number: $number) {
+                    id
+                    title
+                    url
+                    fields(first: 100) {
+                      nodes {
+                        __typename
+                        ... on ProjectV2FieldCommon {
+                          id
+                          name
+                          dataType
+                        }
+                        ... on ProjectV2SingleSelectField {
+                          id
+                          name
+                          dataType
+                          options { id name }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            `;
+
+            let res;
+            try {
+              res = await github.graphql(query, { org: orgLogin, number: projectNumber });
+            } catch (e) {
+              core.setFailed(
+                `Projects v2 auth appears misconfigured or lacks permissions. ${e?.message || e}\n` +
+                  `See docs: https://github.com/Clay-Agency/novel-task-tracker/blob/main/docs/ops/projects-v2-auth.md ` +
+                  `and Issue #80: https://github.com/Clay-Agency/novel-task-tracker/issues/80`
+              );
+              return;
+            }
+
+            const project = res?.organization?.projectV2;
+            if (!project?.id) {
+              core.setFailed(`Could not find org projectV2 ${orgLogin}#${projectNumber} (or token lacks access).`);
+              return;
+            }
+
+            const fields = project?.fields?.nodes || [];
+
+            const lines = [];
+            lines.push(`# Projects v2 auth smoke test`);
+            lines.push('');
+            lines.push(`Org: \\`${orgLogin}\\``);
+            lines.push(`Project: #${projectNumber} — **${project.title}**`);
+            lines.push(`Project ID: \\`${project.id}\\``);
+            if (project.url) lines.push(`URL: ${project.url}`);
+            lines.push('');
+            lines.push(`## Fields (first ${fields.length})`);
+            lines.push('');
+
+            if (fields.length === 0) {
+              lines.push('_No fields returned._');
+            } else {
+              for (const f of fields) {
+                if (!f) continue;
+                const type = f.__typename || 'Unknown';
+                const dataType = f.dataType ? ` (${f.dataType})` : '';
+                lines.push(`- \\`${type}\\`${dataType}: **${f.name || '(no name)'}** (id: \\`${f.id}\\`)`);
+
+                if (Array.isArray(f.options) && f.options.length) {
+                  const opts = f.options.map((o) => o?.name).filter(Boolean).join(', ');
+                  lines.push(`  - options: ${opts}`);
+                }
+              }
+            }
+
+            await core.summary.addRaw(lines.join('\n'), true).write();
