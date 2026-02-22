@@ -26,8 +26,11 @@ jobs:
     name: Query org ProjectV2 metadata (read-only)
     runs-on: ubuntu-latest
     env:
-      ORG_LOGIN: ${{ inputs.org || 'Clay-Agency' }}
-      PROJECT_NUMBER: ${{ inputs.project_number || 1 }}
+      # NOTE: Avoid using the top-level `inputs.*` context in expressions.
+      # It only exists for workflow_dispatch/workflow_call and can break evaluation
+      # if this workflow is ever extended to other triggers.
+      ORG_LOGIN: ${{ github.event.inputs.org || 'Clay-Agency' }}
+      PROJECT_NUMBER: ${{ github.event.inputs.project_number || 1 }}
     steps:
       - name: Resolve Projects v2 auth configuration
         id: auth
