@@ -14,6 +14,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Guard against invalid `inputs.*` context usage
+        shell: bash
+        run: |
+          # The top-level `inputs` context only exists for workflow_dispatch/workflow_call.
+          # Using it in a workflow that can run on other triggers causes:
+          #   Unrecognized named-value: 'inputs'
+          OPEN='${{'
+          if grep -RIn -E "${OPEN}[[:space:]]*inputs\\." .github/workflows; then
+            echo "::error title=Invalid GitHub Actions expression::Do not use the top-level 'inputs' context in workflow expressions. Use github.event.inputs.* or compute inside scripts."
+            exit 1
+          fi
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
