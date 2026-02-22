@@ -124,11 +124,35 @@ End-to-end check (optional):
    - **Done date** is set
    - **Needs decision** is cleared
 
-### 6) Rotation (private key)
+### 6) Private key rotation + incident response
 
-1. App page → **Private keys** → **Generate a private key**.
-2. Replace `PROJECTS_APP_PRIVATE_KEY` secret with the new PEM.
-3. Delete the old private key from the App page.
+#### Routine rotation (planned)
+
+Goal: rotate without downtime by overlapping keys briefly.
+
+1. App page → **Private keys** → **Generate a private key** (download the new `.pem`).
+2. Update the Actions secret `PROJECTS_APP_PRIVATE_KEY` with the **new** PEM contents (keep formatting/line breaks).
+3. Validate quickly:
+   - Run **Projects v2 auth smoke test** (read-only), then optionally trigger **Sync Clay Project status**.
+4. After validation, delete the **old** private key on the App page.
+
+Notes:
+- GitHub App private keys are long-lived; rotation is the primary mitigation if a key may have been exposed.
+- Keep only the minimum number of active keys (ideally 1) to reduce blast radius.
+
+#### Incident response (suspected key compromise)
+
+If you suspect `PROJECTS_APP_PRIVATE_KEY` leaked (e.g., pasted in a ticket, logged, committed, or shared):
+
+1. **Revoke quickly:** delete the affected private key(s) from the GitHub App page (**Private keys**). Deletion immediately prevents new installation tokens from being minted with that key.
+2. **Rotate:** generate a fresh key and update `PROJECTS_APP_PRIVATE_KEY` to the new PEM, then re-run the smoke test.
+3. **Hunt & contain:**
+   - Search for accidental disclosure (PRs, issues, chat logs, CI logs). Remove/redact where possible.
+   - Review recent **Actions runs** for unexpected workflows, forks, or unusual access patterns.
+   - If the App is installed on multiple repos, confirm the installation scope is still least-privilege (selected repos only).
+4. **Follow-up:**
+   - If the key was ever committed, treat the full git history as compromised; rotate again after remediation and consider repository secret scanning alerts.
+   - Document the timeline and rotation in the incident notes for future audits.
 
 ---
 
