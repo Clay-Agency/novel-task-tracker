@@ -1,5 +1,9 @@
 # GitHub Projects v2 auth (Clay org Project #1)
 
+> **Note:** This guide is now maintained as a step-by-step runbook:
+> [`docs/ops/projects-v2-auth-runbook.md`](./projects-v2-auth-runbook.md).
+
+
 This repo has automation that reads and updates **Clay-Agency org Project #1** (GitHub **Projects v2 / `ProjectV2`**) via the **GraphQL API**.
 
 GitHub’s built-in Actions token (`secrets.GITHUB_TOKEN`) **cannot** mutate **organization Projects v2**, so you must configure **one** of:

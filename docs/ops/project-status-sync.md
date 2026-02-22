@@ -10,7 +10,7 @@ It syncs **Clay-Agency org Project #1** (Projects v2 / `ProjectV2`) fields when:
 
 ## Token / permissions (Projects v2)
 
-Detailed setup (GitHub App least-privilege, PAT fallback, troubleshooting): [`docs/ops/projects-v2-auth.md`](./projects-v2-auth.md).
+Detailed setup (GitHub App least-privilege, PAT fallback, troubleshooting): [`docs/ops/projects-v2-auth-runbook.md`](./projects-v2-auth-runbook.md).
 
 GitHub’s built-in Actions token (`secrets.GITHUB_TOKEN`) **cannot** update **organization Projects v2** via GraphQL.
 
@@ -40,6 +40,6 @@ Recommended scopes:
 
 ## Low-noise behavior
 
-- If no App/PAT token is configured, the workflow exits successfully (no-op).
+- If no App/PAT token is configured, the workflow fails early with an actionable error.
 - If the closed issue/PR is **not** in org Project #1, the workflow exits successfully (no-op).
 - If the workflow can’t read the project metadata (permissions, renamed fields, etc.), it logs an info message and exits successfully.
