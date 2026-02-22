@@ -68,7 +68,7 @@ jobs:
         if: ${{ steps.app-token.outputs.token == '' && steps.auth.outputs.has_pat != 'true' }}
         shell: bash
         run: |
-          echo "::error title=No Projects v2 auth token available::This workflow must authenticate to GitHub Projects v2 (org ProjectV2). Configure ONE of the following: (A) GitHub App (preferred): vars.PROJECTS_APP_ID (or secrets.PROJECTS_APP_ID) AND secrets.PROJECTS_APP_PRIVATE_KEY; OR (B) PAT: secrets.PROJECT_STATUS_SYNC_TOKEN. See https://github.com/Clay-Agency/novel-task-tracker/issues/80"
+          echo "::error title=No Projects v2 auth token available::Configure Projects v2 auth: GitHub App (preferred) set vars.PROJECTS_APP_ID + secrets.PROJECTS_APP_PRIVATE_KEY, OR PAT set secrets.PROJECT_STATUS_SYNC_TOKEN. Docs: https://github.com/Clay-Agency/novel-task-tracker/blob/main/docs/ops/projects-v2-auth.md ; Issue #80: https://github.com/Clay-Agency/novel-task-tracker/issues/80"
           exit 1
 
       - name: Sync Project item fields (Status / Done date / Needs decision)
