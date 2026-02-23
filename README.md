@@ -43,8 +43,16 @@ npm run build
 Weekly scheduled CI + manual dispatch procedure and failure triage: [`docs/ops/ci-maintenance-runbook.md`](./docs/ops/ci-maintenance-runbook.md).
 
 ## Project status sync (Issue #78)
-Workflow behavior + token setup: [`docs/ops/project-status-sync.md`](./docs/ops/project-status-sync.md).
-Projects v2 auth guide (GitHub App / PAT): [`docs/ops/projects-v2-auth-runbook.md`](./docs/ops/projects-v2-auth-runbook.md).
+Workflow behavior: [`docs/ops/project-status-sync.md`](./docs/ops/project-status-sync.md).
+
+## Projects v2 automation auth (Issue #96)
+GitHub Projects v2 automation requires a separate token (GitHub App preferred; PAT fallback).
+
+Runbook: [`docs/ops/projects-v2-auth-runbook.md`](./docs/ops/projects-v2-auth-runbook.md)
+
+Workflows look for these GitHub Actions names:
+- **GitHub App (preferred)**: `PROJECTS_APP_ID` (var or secret) + `PROJECTS_APP_PRIVATE_KEY` (secret)
+- **PAT fallback**: `PROJECT_STATUS_SYNC_TOKEN` (secret)
 
 ## Core test completion gate (Issue #12)
 Core test scope and checklist live in [`docs/testing/core-test-strategy.md`](./docs/testing/core-test-strategy.md).
