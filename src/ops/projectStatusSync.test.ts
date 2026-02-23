@@ -6,7 +6,7 @@ const { getProjectMetadata, syncOneItem } = require('../../.github/scripts/proje
 
 describe('project-status-sync', () => {
   it('maps Status/Done date/Needs decision fields from project metadata (incl. Done option id)', async () => {
-    const graphql = vi.fn(async (_query: string, _vars: Record<string, unknown>) => {
+    const graphql = vi.fn(async () => {
       return {
         organization: {
           projectV2: {
@@ -97,7 +97,8 @@ describe('project-status-sync', () => {
     type Vars = Record<string, unknown>;
 
     const calls: Array<{ vars: Vars }> = [];
-    const graphql = vi.fn(async (_query: string, vars: Vars) => {
+    const graphql = vi.fn(async (...args: [string, Vars]) => {
+      const vars = args[1];
       calls.push({ vars });
       return {};
     });
