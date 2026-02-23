@@ -6,7 +6,10 @@ const { getProjectMetadata, syncOneItem } = require('../../.github/scripts/proje
 
 describe('project-status-sync', () => {
   it('maps Status/Done date/Needs decision fields from project metadata (incl. Done option id)', async () => {
-    const graphql = vi.fn(async () => {
+    const graphql = vi.fn(async (_query: string, _vars: { org: string; number: number }) => {
+      void _query;
+      void _vars;
+
       return {
         organization: {
           projectV2: {
