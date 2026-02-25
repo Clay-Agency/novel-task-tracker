@@ -54,6 +54,10 @@ Workflows look for these GitHub Actions names:
 - **GitHub App (preferred)**: `PROJECTS_APP_ID` (var or secret) + `PROJECTS_APP_PRIVATE_KEY` (secret)
 - **PAT fallback**: `PROJECT_STATUS_SYNC_TOKEN` (secret)
 
+A daily scheduled preflight workflow verifies those names are set:
+- [`.github/workflows/projects-v2-auth-preflight.yml`](./.github/workflows/projects-v2-auth-preflight.yml)
+- Docs (what it checks + how to silence temporarily): [`docs/ops/projects-v2-auth-runbook.md`](./docs/ops/projects-v2-auth-runbook.md)
+
 ## Core test completion gate (Issue #12)
 Core test scope and checklist live in [`docs/testing/core-test-strategy.md`](./docs/testing/core-test-strategy.md).
 
