@@ -2,6 +2,10 @@
 
 This repo has GitHub Actions automation that reads and updates **Clay-Agency org Project #1** (GitHub **Projects v2 / `ProjectV2`**) via the **GraphQL API**.
 
+Context / blocker: this setup is required to unblock **Issue #80** (Projects v2 automation) — https://github.com/Clay-Agency/novel-task-tracker/issues/80
+
+UI note: GitHub labels move occasionally; the click-paths below match the GitHub web UI as of **2026-02**.
+
 GitHub’s built-in Actions token (`secrets.GITHUB_TOKEN`) **cannot** mutate **organization Projects v2**, so you must configure **one** of:
 
 - **Option A (preferred): GitHub App installation token** (least privilege, per-run tokens, easy rotation)
@@ -72,6 +76,15 @@ Caution:
 
 ## What the workflows look for (names must match)
 
+Exact names (copy/paste):
+
+| Name | GitHub Actions type | Preferred location | Notes |
+|---|---|---|---|
+| `PROJECTS_APP_ID` | **Variable** | `vars.PROJECTS_APP_ID` (repo-level or org-level) | Legacy fallback: `secrets.PROJECTS_APP_ID` is still accepted by the preflight. |
+| `PROJECTS_APP_PRIVATE_KEY` | **Secret** | `secrets.PROJECTS_APP_PRIVATE_KEY` | Full PEM contents (keep headers + line breaks). |
+| `PROJECT_STATUS_SYNC_TOKEN` | **Secret** | `secrets.PROJECT_STATUS_SYNC_TOKEN` | PAT fallback (only if you can’t use a GitHub App). |
+
+
 ### GitHub App (preferred)
 
 - **Actions variable** (preferred) or **secret**:
@@ -92,15 +105,20 @@ The workflow mints an installation token at runtime using `actions/create-github
 
 ### 1) Create an org-owned GitHub App
 
-1. Go to **Clay-Agency** → **Settings**.
-2. In the left sidebar: **Developer settings** → **GitHub Apps**.
-3. Click **New GitHub App**.
-4. Fill in:
-   - **GitHub App name**: e.g. `Clay Projects Automation` (any unique name)
-   - **Homepage URL**: the repo URL is fine (e.g. `https://github.com/Clay-Agency/novel-task-tracker`)
-   - **Webhook**: uncheck **Active** (not needed; Actions events trigger the workflows)
-   - **Where can this GitHub App be installed?** → **Only on this account**
-5. Set **Permissions** (minimum recommended):
+**Org-side click path (create the App):**
+1. Open the **Clay-Agency** organization on GitHub.
+2. Click **Settings** (this is **org** Settings, not a repo’s Settings).
+3. In the left sidebar, click **Developer settings**.
+4. Click **GitHub Apps**.
+5. Click **New GitHub App**.
+
+Fill in the form:
+- **GitHub App name**: e.g. `Clay Projects Automation` (any unique name)
+- **Homepage URL**: the repo URL is fine (e.g. `https://github.com/Clay-Agency/novel-task-tracker`)
+- **Webhook**: uncheck **Active** (not needed; Actions events trigger the workflows)
+- **Where can this GitHub App be installed?** → **Only on this account**
+
+Set **Permissions** (minimum recommended):
 
 | Scope | Permission | Level | Why needed |
 |---|---|---:|---|
@@ -109,7 +127,8 @@ The workflow mints an installation token at runtime using `actions/create-github
 | **Repository** | **Pull requests** | **Read-only** | Needed to read PR nodes (merged/closed timestamps) in PR-triggered runs. |
 | **Repository** | **Metadata** | **Read-only** | Required for basic repo identification / token issuance (usually auto-included). |
 
-6. Click **Create GitHub App**.
+Finally:
+- Scroll down and click **Create GitHub App**.
 
 Notes:
 - **No webhook / event subscriptions** are required.
@@ -123,10 +142,15 @@ Notes:
 
 ### 3) Install the App on the Clay-Agency org
 
-1. From the App page, click **Install App**.
-2. Choose the **Clay-Agency** organization.
-3. Installation scope (recommended least privilege):
-   - **Only select repositories** → select **`novel-task-tracker`**.
+**Org-side click path (install the App on the org):**
+1. Go to **Clay-Agency** → **Settings** → **Developer settings** → **GitHub Apps**.
+2. Click your App’s name (e.g. `Clay Projects Automation`).
+3. In the App’s left sidebar, click **Install App**.
+4. On the installation page, choose the **Clay-Agency** organization (if prompted).
+5. Under **Repository access**, choose one:
+   - **Only select repositories** → select **`novel-task-tracker`** (recommended least privilege)
+   - **All repositories** (only if you explicitly want org-wide coverage)
+6. Click **Install** / **Save** (button label varies slightly).
 
 If **Clay-Agency Project #1 contains items from multiple repos** and you want the daily **reconcile** run to handle them, the App must also be installed on those repos (or installed on **All repositories**).
 
@@ -136,20 +160,41 @@ You can store these either **repo-level** (simplest) or **org-level** (if reused
 
 #### Repo-level (recommended to start)
 
-Go to **Clay-Agency/novel-task-tracker** → **Settings** → **Secrets and variables** → **Actions**:
+**Repo-side click path (set Actions Variables/Secrets):**
+1. Open the repo: **Clay-Agency/novel-task-tracker**.
+2. Click the repo’s **Settings** tab.
+3. In the left sidebar, click **Secrets and variables**.
+4. Click **Actions**.
 
-- **Variables**:
-  - `PROJECTS_APP_ID` = your App ID
-- **Secrets**:
-  - `PROJECTS_APP_PRIVATE_KEY` = full PEM contents
+Now set these in the correct tabs (GitHub separates them):
+
+- **Variables** tab → **New repository variable**
+  - Name: `PROJECTS_APP_ID`
+  - Value: *(your numeric App ID)*
+
+- **Secrets** tab → **New repository secret**
+  - Name: `PROJECTS_APP_PRIVATE_KEY`
+  - Value: *(paste the full PEM contents; see formatting notes below)*
+
+Legacy support (avoid if possible):
+- Instead of a variable, you *may* set `PROJECTS_APP_ID` as a **Secret** named `PROJECTS_APP_ID`. The preflight still accepts this, but prefer the Variable going forward.
 
 #### Org-level (if multiple repos will reuse the same App)
 
-Go to **Clay-Agency** → **Settings** → **Secrets and variables** → **Actions**:
+**Org-side click path (set Actions Variables/Secrets at the org level):**
+1. Open **Clay-Agency** on GitHub.
+2. Click **Settings**.
+3. In the left sidebar, click **Secrets and variables**.
+4. Click **Actions**.
 
-- **Variables**: `PROJECTS_APP_ID`
-- **Secrets**: `PROJECTS_APP_PRIVATE_KEY`
-- Set **Repository access** = **Selected repositories** and include `novel-task-tracker`.
+Create both entries (in their respective tabs):
+- **Variables** tab → **New organization variable**
+  - Name: `PROJECTS_APP_ID`
+
+- **Secrets** tab → **New organization secret**
+  - Name: `PROJECTS_APP_PRIVATE_KEY`
+
+When prompted, set **Repository access** to **Selected repositories** and include `novel-task-tracker` (and any other repos that the App needs to read Issues/PRs from).
 
 #### PEM formatting (common pitfall)
 
@@ -227,8 +272,10 @@ Use this only if you can’t use a GitHub App.
    - **Organization permissions**: **Projects** → **Read and write**
 4. Save the token value.
 5. Store it as a GitHub Actions secret:
-   - Repo → **Settings** → **Secrets and variables** → **Actions** → **New repository secret**
-   - Name: `PROJECT_STATUS_SYNC_TOKEN`
+   - Open **Clay-Agency/novel-task-tracker** → **Settings** → **Secrets and variables** → **Actions**
+   - Click the **Secrets** tab → **New repository secret**
+     - Name: `PROJECT_STATUS_SYNC_TOKEN`
+     - Value: *(your PAT token value — keep it secret)*
 
 ### Classic PAT (fallback)
 
