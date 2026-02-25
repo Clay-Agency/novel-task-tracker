@@ -11,6 +11,63 @@ Primary consumers:
 - `.github/workflows/project-status-sync.yml` (sync Status/Done date/Needs decision)
 - `.github/workflows/projects-v2-auth-smoke.yml` (read-only smoke test)
 
+## Scheduled workflow — Projects v2 auth preflight
+
+Workflow: [`.github/workflows/projects-v2-auth-preflight.yml`](../../.github/workflows/projects-v2-auth-preflight.yml) (added in [PR #101](https://github.com/Clay-Agency/novel-task-tracker/pull/101)).
+
+This workflow runs **daily on a schedule** (and can be run manually) to check whether this repo has a valid **Projects v2 auth** configuration **before** other scheduled automations run.
+
+### What it checks
+
+It passes if **either** of these is configured in GitHub Actions:
+
+1) **GitHub App (preferred)**
+   - `vars.PROJECTS_APP_ID` (preferred)
+     - legacy fallback: `secrets.PROJECTS_APP_ID` (still accepted)
+   - `secrets.PROJECTS_APP_PRIVATE_KEY`
+
+2) **PAT fallback**
+   - `secrets.PROJECT_STATUS_SYNC_TOKEN`
+
+If neither is configured, the preflight **fails intentionally** with an actionable error message and a step summary pointing back to this runbook.
+
+### Where to see the result (job summary)
+
+1. Go to **GitHub → Actions**.
+2. Click the workflow: **Projects v2 auth preflight**.
+3. Open the latest run.
+4. Click the job: **Verify Projects v2 auth vars/secrets are configured**.
+5. Check the run **Summary** — it shows a **Detected** section like:
+   - `PROJECTS_APP_ID present: true/false`
+   - `PROJECTS_APP_PRIVATE_KEY present: true/false`
+   - `PROJECT_STATUS_SYNC_TOKEN present: true/false`
+
+Notes:
+- The workflow **does not print secret values**, only whether they are present.
+- You may also see an error annotation at the top of the run when preflight fails.
+
+### Common failure modes
+
+| Detected | Meaning | Fix |
+|---|---|---|
+| App ID = ✅, App key = ❌, PAT = ❌ | **Only App ID is set** | Add `secrets.PROJECTS_APP_PRIVATE_KEY` (full PEM, with headers + line breaks). |
+| App ID = ❌, App key = ✅, PAT = ❌ | **Only private key is set** | Add `vars.PROJECTS_APP_ID` (preferred) or `secrets.PROJECTS_APP_ID` (legacy). |
+| App ID = ❌, App key = ❌, PAT = ❌ | **Nothing is configured** | Configure either the GitHub App pair or the PAT fallback (see below). |
+| PAT = ✅ (App ID/key may be missing) | PAT fallback is configured | Preflight will pass; consider migrating to the GitHub App approach for least privilege. |
+
+### Temporarily silencing the schedule (use sparingly)
+
+Preferred fix is to **configure Projects v2 auth** (this is usually a one-time setup). If the scheduled failure is too noisy (e.g., during initial bootstrapping), you can temporarily silence it **with caution**:
+
+Option A (no code change):
+- **Actions → Projects v2 auth preflight → Disable workflow** (re-enable when auth is configured).
+
+Option B (code change):
+- Edit [`.github/workflows/projects-v2-auth-preflight.yml`](../../.github/workflows/projects-v2-auth-preflight.yml) and remove (or comment out) the `on: schedule:` trigger, then merge.
+
+Caution:
+- Disabling/removing the schedule reduces early warning for missing auth, and can cause other workflows (like scheduled project sync) to fail later with less context.
+
 ---
 
 ## What the workflows look for (names must match)
