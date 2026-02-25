@@ -1,0 +1,81 @@
+name: Projects v2 auth preflight
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Daily preflight to detect missing Actions vars/secrets before other workflows run.
+    - cron: '10 2 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: projects-v2-auth-preflight
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    name: Verify Projects v2 auth vars/secrets are configured
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check required Actions vars/secrets
+        shell: bash
+        env:
+          # Prefer vars.PROJECTS_APP_ID, but allow secrets.PROJECTS_APP_ID as a legacy fallback.
+          PROJECTS_APP_ID: ${{ vars.PROJECTS_APP_ID || secrets.PROJECTS_APP_ID }}
+          PROJECTS_APP_PRIVATE_KEY: ${{ secrets.PROJECTS_APP_PRIVATE_KEY }}
+          PROJECT_STATUS_SYNC_TOKEN: ${{ secrets.PROJECT_STATUS_SYNC_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          has_app_id=false
+          has_app_key=false
+          has_pat=false
+
+          if [ -n "${PROJECTS_APP_ID}" ]; then has_app_id=true; fi
+          if [ -n "${PROJECTS_APP_PRIVATE_KEY}" ]; then has_app_key=true; fi
+          if [ -n "${PROJECT_STATUS_SYNC_TOKEN}" ]; then has_pat=true; fi
+
+          docs_url="https://github.com/${GITHUB_REPOSITORY}/blob/main/docs/ops/projects-v2-auth-runbook.md"
+
+          {
+            echo "# Projects v2 auth preflight"
+            echo ""
+            echo "This workflow checks that **at least one** supported auth configuration is present:"
+            echo "- GitHub App (preferred): vars.PROJECTS_APP_ID + secrets.PROJECTS_APP_PRIVATE_KEY"
+            echo "- PAT fallback: secrets.PROJECT_STATUS_SYNC_TOKEN"
+            echo ""
+            echo "Docs: ${docs_url}"
+            echo ""
+            echo "## Detected"
+            echo "- PROJECTS_APP_ID present: ${has_app_id}"
+            echo "- PROJECTS_APP_PRIVATE_KEY present: ${has_app_key}"
+            echo "- PROJECT_STATUS_SYNC_TOKEN present: ${has_pat}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$has_app_id" = true ] && [ "$has_app_key" = true ]; then
+            echo "Projects v2 auth preflight OK (GitHub App configured)." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          if [ "$has_pat" = true ]; then
+            echo "Projects v2 auth preflight OK (PAT fallback configured)." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          # Fail loudly with actionable guidance
+          msg="Missing Projects v2 auth configuration. Configure either: (A) GitHub App vars.PROJECTS_APP_ID + secrets.PROJECTS_APP_PRIVATE_KEY (preferred), or (B) PAT fallback secrets.PROJECT_STATUS_SYNC_TOKEN. Docs: ${docs_url}"
+
+          if [ "$has_app_id" = true ] && [ "$has_app_key" = false ]; then
+            msg="Found PROJECTS_APP_ID but missing secrets.PROJECTS_APP_PRIVATE_KEY. ${msg}"
+          elif [ "$has_app_id" = false ] && [ "$has_app_key" = true ]; then
+            msg="Found secrets.PROJECTS_APP_PRIVATE_KEY but missing vars.PROJECTS_APP_ID. ${msg}"
+          fi
+
+          echo "::error title=Projects v2 auth preflight failed::${msg}"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "## Next steps" >> "$GITHUB_STEP_SUMMARY"
+          echo "1. Follow the runbook: ${docs_url}" >> "$GITHUB_STEP_SUMMARY"
+          echo "2. Set GitHub Actions vars/secrets (repo-level or org-level) with the exact names above." >> "$GITHUB_STEP_SUMMARY"
+
+          exit 1
