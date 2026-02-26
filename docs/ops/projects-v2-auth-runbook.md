@@ -184,9 +184,8 @@ gh variable set PROJECTS_APP_ID -R "$REPO" --body "$APP_ID"
 # 2) Set Actions *secret* (GitHub App private key)
 # Prefer --body-file (preserves line breaks for PEM). If your gh version doesn't support it,
 # use stdin redirection (also safe for multiline PEM).
-gh secret set PROJECTS_APP_PRIVATE_KEY -R "$REPO" --body-file "$PEM_FILE"
-# Fallback (multiline-safe):
-# gh secret set PROJECTS_APP_PRIVATE_KEY -R "$REPO" < "$PEM_FILE"
+gh secret set PROJECTS_APP_PRIVATE_KEY -R "$REPO" --body-file "$PEM_FILE" \
+  || gh secret set PROJECTS_APP_PRIVATE_KEY -R "$REPO" < "$PEM_FILE"
 
 # 3) PAT fallback secret (only if you can't use the GitHub App)
 # gh secret set PROJECT_STATUS_SYNC_TOKEN -R "$REPO" --body "$PAT_TOKEN"
