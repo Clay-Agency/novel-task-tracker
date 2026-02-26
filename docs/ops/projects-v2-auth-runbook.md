@@ -156,6 +156,50 @@ If **Clay-Agency Project #1 contains items from multiple repos** and you want th
 
 ### 4) Add Actions variables/secrets
 
+#### CLI quickstart (gh) — repo-level setup (copy/paste)
+
+This is the fastest/safest way to configure the required **repo-level** Actions variable + secrets.
+
+Prereqs:
+- You have `gh` installed and authenticated (`gh auth status`).
+- Your GitHub account has **repo admin** permissions on `Clay-Agency/novel-task-tracker` (to set repo Actions secrets/variables).
+- You already created the GitHub App + downloaded the private key PEM (see steps above). This auth is needed to unblock **Issue #80** (Projects v2 automation): https://github.com/Clay-Agency/novel-task-tracker/issues/80
+
+```bash
+# Target repo
+REPO="Clay-Agency/novel-task-tracker"
+
+# GitHub App credentials
+APP_ID="<numeric app id>"
+PEM_FILE="</absolute/path/to/private-key.pem>"
+
+# (Optional) PAT fallback token (only if not using the App)
+# PAT_TOKEN="ghp_..."
+
+gh auth status
+
+# 1) Set Actions *variable* (preferred location)
+gh variable set PROJECTS_APP_ID -R "$REPO" --body "$APP_ID"
+
+# 2) Set Actions *secret* (GitHub App private key)
+# Prefer --body-file (preserves line breaks for PEM). If your gh version doesn't support it,
+# use stdin redirection (also safe for multiline PEM).
+gh secret set PROJECTS_APP_PRIVATE_KEY -R "$REPO" --body-file "$PEM_FILE"
+# Fallback (multiline-safe):
+# gh secret set PROJECTS_APP_PRIVATE_KEY -R "$REPO" < "$PEM_FILE"
+
+# 3) PAT fallback secret (only if you can't use the GitHub App)
+# gh secret set PROJECT_STATUS_SYNC_TOKEN -R "$REPO" --body "$PAT_TOKEN"
+
+# Verify names are present (values are never shown)
+gh variable list -R "$REPO" | grep -E '^PROJECTS_APP_ID\\b'
+gh secret list -R "$REPO" | grep -E '^(PROJECTS_APP_PRIVATE_KEY|PROJECT_STATUS_SYNC_TOKEN)\\b'
+```
+
+Notes:
+- Do **not** put the PEM into shell history via `--body "$(cat ...)"`.
+- Secrets/variables can also be configured at the **org level**, but the commands above are intentionally repo-scoped for least surprise.
+
 You can store these either **repo-level** (simplest) or **org-level** (if reused across repos). Do **not** commit keys to the repo.
 
 #### Repo-level (recommended to start)
