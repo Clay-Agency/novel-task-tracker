@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "check:workflows": "ruby -e 'require \"yaml\"; Dir[\".github/workflows/*.{yml,yaml}\"].sort.each { |f| YAML.load_file(f); puts \"OK #{f}\" }'"
   },
   "dependencies": {
     "react": "^18.3.1",
