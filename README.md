@@ -39,6 +39,11 @@ npm run e2e
 npm run build
 ```
 
+## Ops / Automation
+Project #1 status sync workflows require **GitHub Projects v2 auth** (separate token).
+Runbook: [`docs/ops/projects-v2-auth-runbook.md`](./docs/ops/projects-v2-auth-runbook.md)
+Tracking issue: [#80](https://github.com/Clay-Agency/novel-task-tracker/issues/80)
+
 ## CI maintenance runbook (Issue #72)
 Weekly scheduled CI + manual dispatch procedure and failure triage: [`docs/ops/ci-maintenance-runbook.md`](./docs/ops/ci-maintenance-runbook.md).
 
