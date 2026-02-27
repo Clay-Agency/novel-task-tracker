@@ -95,7 +95,7 @@ jobs:
         with:
           github-token: ${{ github.token }}
           script: |
-            const core = require('/core');
+            const core = require('@actions/core');
             const issueNumber = 80;
             const marker = '<!-- projects-v2-auth-missing-reminder:v1 -->';
             const rateLimitDays = 7;
