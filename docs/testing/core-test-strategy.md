@@ -27,7 +27,10 @@ Core tests are the minimum automated checks that must pass before merge:
 A change set is considered complete only when all items below are true:
 
 - [ ] `npm run lint` passes
+- [ ] `npm run typecheck` passes
 - [ ] `npm test` passes
+- [ ] `npm run build` passes
+- [ ] Workflow files parse successfully via `npm run check:workflows`
 - [ ] Unit tests cover reducer domain logic and persistence migration behavior
 - [ ] UI integration tests cover CRUD + search/filter/sort + persistence flows
 - [ ] Tests are deterministic (fixed timestamps/explicit assertions, no network/time dependencies)
@@ -41,6 +44,12 @@ A change set is considered complete only when all items below are true:
 ## Commands
 
 ```bash
+npm run verify:core
+
+# or run individually
+npm run check:workflows
 npm run lint
+npm run typecheck
 npm test
+npm run build
 ```

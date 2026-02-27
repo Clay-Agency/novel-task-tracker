@@ -12,7 +12,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "e2e": "playwright test",
-    "check:workflows": "ruby -e 'require \"yaml\"; Dir[\".github/workflows/*.{yml,yaml}\"].sort.each { |f| YAML.load_file(f); puts \"OK #{f}\" }'"
+    "check:workflows": "ruby -e 'require \"yaml\"; Dir[\".github/workflows/*.{yml,yaml}\"].sort.each { |f| YAML.load_file(f); puts \"OK #{f}\" }'",
+    "verify:core": "npm run check:workflows && npm run lint && npm run typecheck && npm test && npm run build"
   },
   "dependencies": {
     "react": "^18.3.1",
