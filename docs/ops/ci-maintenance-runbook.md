@@ -20,11 +20,12 @@ The workflow runs in two ways:
 ## What the workflow executes
 In order, it runs:
 1. `npm ci`
-2. `npm run lint`
-3. `npm run typecheck`
-4. `npm test`
-5. `npm run build`
-6. `npm audit --omit=dev --audit-level=high`
+2. `npm run check:workflows`
+3. `npm run lint`
+4. `npm run typecheck`
+5. `npm test`
+6. `npm run build`
+7. `npm audit --omit=dev --audit-level=high`
 
 Notes:
 - Audit is intentionally scoped to **production deps** (`--omit=dev`).
@@ -48,6 +49,11 @@ Use this short triage flow when the workflow fails.
 - Reproduce locally with `npm test` (and related suite if needed).
 - Determine if failure is deterministic regression vs flaky behavior.
 - Fix regression or stabilize test, then re-run full checks.
+
+### 4) Workflow YAML validation failure
+- Reproduce locally with `npm run check:workflows`.
+- Fix malformed YAML in `.github/workflows/*.yml` and re-run the command.
+- Confirm the updated workflow still loads in GitHub Actions and rerun maintenance job.
 
 ## Noise policy and monitoring
 - **No auto-issues / no auto-PRs** are created by this workflow.
