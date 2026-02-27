@@ -182,17 +182,27 @@ gh auth status
 gh variable set PROJECTS_APP_ID -R "$REPO" --body "$APP_ID"
 
 # 2) Set Actions *secret* (GitHub App private key)
-# Prefer --body-file (preserves line breaks for PEM). If your gh version doesn't support it,
-# use stdin redirection (also safe for multiline PEM).
-gh secret set PROJECTS_APP_PRIVATE_KEY -R "$REPO" --body-file "$PEM_FILE" \
-  || gh secret set PROJECTS_APP_PRIVATE_KEY -R "$REPO" < "$PEM_FILE"
+# Read PEM from file via stdin to preserve line breaks (recommended).
+gh secret set PROJECTS_APP_PRIVATE_KEY -R "$REPO" < "$PEM_FILE"
 
 # 3) PAT fallback secret (only if you can't use the GitHub App)
+# Interactive prompt (recommended; avoids leaking via shell history)
+gh secret set PROJECT_STATUS_SYNC_TOKEN -R "$REPO"
+# Or non-interactive:
 # gh secret set PROJECT_STATUS_SYNC_TOKEN -R "$REPO" --body "$PAT_TOKEN"
 
 # Verify names are present (values are never shown)
 gh variable list -R "$REPO" | grep -E '^PROJECTS_APP_ID\\b'
 gh secret list -R "$REPO" | grep -E '^(PROJECTS_APP_PRIVATE_KEY|PROJECT_STATUS_SYNC_TOKEN)\\b'
+
+# (Optional) Org-level instead of repo-level (reuse across repos)
+# Restrict visibility to selected repos for least privilege.
+# ORG="Clay-Agency"
+# gh variable set PROJECTS_APP_ID --org "$ORG" --visibility selected --repos novel-task-tracker --body "$APP_ID"
+# gh secret set PROJECTS_APP_PRIVATE_KEY --org "$ORG" --visibility selected --repos novel-task-tracker < "$PEM_FILE"
+
+# Security note: never paste the PEM or PAT token into issues/PRs/chat.
+# If you suspect exposure, rotate/revoke immediately (see incident response section below).
 ```
 
 Notes:
