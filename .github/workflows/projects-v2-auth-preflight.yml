@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 concurrency:
   group: projects-v2-auth-preflight
@@ -19,6 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check required Actions vars/secrets
+        id: auth
         shell: bash
         env:
           # Prefer vars.PROJECTS_APP_ID, but allow secrets.PROJECTS_APP_ID as a legacy fallback.
@@ -55,11 +57,15 @@ jobs:
 
           if [ "$has_app_id" = true ] && [ "$has_app_key" = true ]; then
             echo "Projects v2 auth preflight OK (GitHub App configured)." >> "$GITHUB_STEP_SUMMARY"
+            echo "auth_ok=true" >> "$GITHUB_OUTPUT"
+            echo "auth_mode=github_app" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
           if [ "$has_pat" = true ]; then
             echo "Projects v2 auth preflight OK (PAT fallback configured)." >> "$GITHUB_STEP_SUMMARY"
+            echo "auth_ok=true" >> "$GITHUB_OUTPUT"
+            echo "auth_mode=pat" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
@@ -72,10 +78,87 @@ jobs:
             msg="Found secrets.PROJECTS_APP_PRIVATE_KEY but missing vars.PROJECTS_APP_ID. ${msg}"
           fi
 
-          echo "::error title=Projects v2 auth preflight failed::${msg}"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "## Next steps" >> "$GITHUB_STEP_SUMMARY"
           echo "1. Follow the runbook: ${docs_url}" >> "$GITHUB_STEP_SUMMARY"
           echo "2. Set GitHub Actions vars/secrets (repo-level or org-level) with the exact names above." >> "$GITHUB_STEP_SUMMARY"
 
+          # Mark missing auth (do not fail the step yet so we can post a low-noise reminder comment).
+          echo "auth_ok=false" >> "$GITHUB_OUTPUT"
+          echo "auth_mode=missing" >> "$GITHUB_OUTPUT"
+          echo "error_message=${msg}" >> "$GITHUB_OUTPUT"
+
+      - name: Reminder comment on Issue #80 (rate-limited)
+        if: ${{ steps.auth.outputs.auth_ok != 'true' }}
+        continue-on-error: true
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const core = require('/core');
+            const issueNumber = 80;
+            const marker = '<!-- projects-v2-auth-missing-reminder:v1 -->';
+            const rateLimitDays = 7;
+
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            const issueUrl = `https://github.com/${owner}/${repo}/issues/${issueNumber}`;
+            const runbookUrl = `https://github.com/${owner}/${repo}/blob/main/docs/ops/projects-v2-auth-runbook.md`;
+            const smokeWorkflowUrl = `https://github.com/${owner}/${repo}/actions/workflows/projects-v2-auth-smoke.yml`;
+
+            const since = new Date(Date.now() - rateLimitDays * 24 * 60 * 60 * 1000);
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number: issueNumber,
+              per_page: 100,
+            });
+
+            const matching = comments
+              .filter((c) => typeof c?.body === 'string' && c.body.includes(marker))
+              .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+            if (matching.length > 0) {
+              const last = matching[0];
+              const lastAt = new Date(last.created_at);
+              if (lastAt > since) {
+                core.info(
+                  `Skipping reminder comment: last marker comment was ${last.created_at} (< ${rateLimitDays} days ago).`
+                );
+                return;
+              }
+            }
+
+            const body = [
+              `Projects v2 auth is currently **missing** in this repo; workflows that sync Project status will fail until it’s configured.`,
+              ``,
+              `Quickstart (recommended):`,
+              `- Set repo/org **Actions variable**: \`PROJECTS_APP_ID\``,
+              `- Set repo/org **Actions secret**: \`PROJECTS_APP_PRIVATE_KEY\``,
+              ``,
+              `PAT fallback (less preferred):`,
+              `- Set repo/org **Actions secret**: \`PROJECT_STATUS_SYNC_TOKEN\``,
+              ``,
+              `Links:`,
+              `- Tracking issue: ${issueUrl}`,
+              `- Runbook: ${runbookUrl}`,
+              `- Workflow: Projects v2 auth smoke test — ${smokeWorkflowUrl}`,
+              ``,
+              marker,
+            ].join('\n');
+
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number: issueNumber,
+              body,
+            });
+
+      - name: Fail preflight (missing Projects v2 auth)
+        if: ${{ steps.auth.outputs.auth_ok != 'true' }}
+        shell: bash
+        run: |
+          echo "::error title=Projects v2 auth preflight failed::${{ steps.auth.outputs.error_message }}"
           exit 1
