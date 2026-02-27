@@ -27,7 +27,7 @@ Before assigning final reviewer, the PR author performs a deep self-review and c
 
 - Requirement coverage is complete for the linked issue.
 - Logic/edge cases were checked with **xhigh reasoning** (assumptions validated, failure paths reviewed).
-- Tests/lint/build were run and outputs are pasted in the PR.
+- Core verification was run (`npm run verify:core`) and outputs are pasted in the PR.
 - If UI changed, screenshots/GIFs are attached.
 - Risks, regressions, and rollback considerations are documented.
 
@@ -41,9 +41,8 @@ After Stage 1 is complete, request final review from **Boe**.
 
 - [ ] Linked issue(s) included (`Closes #...`)
 - [ ] Stage 1 self-review complete (xhigh reasoning applied)
-- [ ] `npm run lint` result attached
-- [ ] `npm test` result attached
-- [ ] `npm run build` result attached
+- [ ] `npm run verify:core` result attached
+- [ ] (optional) individual command outputs attached when needed (`check:workflows`, `lint`, `typecheck`, `test`, `build`)
 - [ ] UI change evidence attached (screenshots/GIF), or marked N/A
 - [ ] Risks/edge cases documented
 - [ ] Stage 2 final review requested from Boe
