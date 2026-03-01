@@ -315,26 +315,117 @@ If you suspect `PROJECTS_APP_PRIVATE_KEY` leaked (e.g., pasted in a ticket, logg
 
 Use this only if you can’t use a GitHub App.
 
+Why this exists: **Issue #80** (Projects v2 automation) is blocked on configuring Projects v2 auth for **Clay-Agency Project #1**. A PAT can unblock it, but it’s higher-risk than the GitHub App approach.
+
+### Requirements (what the workflows need)
+
+The PAT must be able to:
+
+1) **Read + write** the org Project (Projects v2)
+2) **Read** Issues / PRs referenced by Project items (for closed/merged timestamps, etc.)
+
+If the Project contains items from **multiple repositories**, the PAT must have access to those repos too (either “All repositories” or include each repo explicitly).
+
 ### Fine-grained PAT (recommended if using PAT)
 
-1. GitHub (user) → **Settings** → **Developer settings** → **Personal access tokens** → **Fine-grained tokens**.
-2. **Generate new token**.
-3. Set:
-   - **Resource owner**: `Clay-Agency`
-   - **Repository access**: only `novel-task-tracker` (or the repos needed)
-   - **Organization permissions**: **Projects** → **Read and write**
-4. Save the token value.
-5. Store it as a GitHub Actions secret:
-   - Open **Clay-Agency/novel-task-tracker** → **Settings** → **Secrets and variables** → **Actions**
-   - Click the **Secrets** tab → **New repository secret**
-     - Name: `PROJECT_STATUS_SYNC_TOKEN`
-     - Value: *(your PAT token value — keep it secret)*
+#### A) Create the token (click-by-click)
+
+1. GitHub (your user account) → profile photo menu → **Settings**.
+2. Left sidebar → **Developer settings**.
+3. **Personal access tokens** → **Fine-grained tokens**.
+4. Click **Generate new token**.
+
+Fill in the form:
+
+- **Token name**: e.g. `novel-task-tracker Projects v2 sync`.
+- **Expiration**: choose a short period (e.g. 30–90 days). Avoid “No expiration”.
+- **Resource owner**: **`Clay-Agency`** (important — not your personal account).
+
+**Repository access** (choose one):
+- **Only select repositories** → select **`novel-task-tracker`** (minimum), plus any other repos that appear in the Project, or
+- **All repositories** (only if you intentionally want org-wide coverage).
+
+**Permissions** (exact):
+
+| Section | Permission | Level | Why |
+|---|---|---:|---|
+| **Organization permissions** | **Projects** | **Read and write** | Required to query/update `ProjectV2` and run mutations like `updateProjectV2ItemFieldValue`. |
+| **Repository permissions** | **Issues** | **Read-only** | Needed to read Issue nodes referenced by Project items (e.g. `closedAt`). |
+| **Repository permissions** | **Pull requests** | **Read-only** | Needed to read PR nodes referenced by Project items (e.g. `mergedAt`). |
+| **Repository permissions** | **Metadata** | **Read-only** | Required by GitHub for basic repo access with fine-grained tokens. |
+
+Notes:
+- You typically do **not** need `Contents`, `Actions`, or `Administration` permissions for this workflow.
+- If you later change token permissions, prefer creating a **new token** and rotating the secret, instead of editing in place.
+
+5. Scroll down and click **Generate token**.
+6. **Copy the token value immediately** (GitHub will not show it again).
+
+#### B) Store it safely (GitHub Actions secret)
+
+**Never paste this token into issues, PRs, chat, or logs.** Treat it like a password.
+
+Repo-side click path:
+1. Open repo **Clay-Agency/novel-task-tracker**.
+2. Click **Settings**.
+3. Left sidebar → **Secrets and variables** → **Actions**.
+4. **Secrets** tab → **New repository secret**.
+5. Set:
+   - **Name**: `PROJECT_STATUS_SYNC_TOKEN`
+   - **Secret**: *(paste the PAT value)*
+6. Click **Add secret**.
+
+CLI option (recommended; avoids accidental logging / shell history):
+
+```bash
+REPO="Clay-Agency/novel-task-tracker"
+
+# Interactive prompt (recommended; token is not echoed)
+gh secret set PROJECT_STATUS_SYNC_TOKEN -R "$REPO"
+
+# Verify name exists (value is never shown)
+gh secret list -R "$REPO" | grep -E '^PROJECT_STATUS_SYNC_TOKEN$'
+```
+
+Rotation guidance:
+- When the token nears expiry (or if you suspect exposure), generate a **new** fine-grained PAT and **replace** the Actions secret value.
+- Then revoke/delete the old token in GitHub user settings.
 
 ### Classic PAT (fallback)
 
-If your org still requires classic PATs:
-- Scopes typically needed: `project` (and sometimes `repo` and/or `read:org` depending on org restrictions).
-- Store as `PROJECT_STATUS_SYNC_TOKEN`.
+Only use if your org still requires classic tokens.
+
+Typical scopes:
+- `project` (for Projects v2)
+- `repo` (to read Issues/PRs referenced by Project items)
+
+Store it as the Actions secret `PROJECT_STATUS_SYNC_TOKEN` (same name).
+
+### Common failure modes (PAT)
+
+| Symptom / error | Most common cause | Fix |
+|---|---|---|
+| Preflight fails: `PROJECT_STATUS_SYNC_TOKEN present: false` | Secret not set or wrong name | Set Actions secret **exactly** named `PROJECT_STATUS_SYNC_TOKEN`. |
+| `Bad credentials` / 401 | Token expired/revoked or copied incorrectly | Generate a new token and update the Actions secret. |
+| GraphQL: `Resource not accessible by personal access token` | Missing **Org → Projects: Read and write** | Create a new token with **Projects: Read and write**. |
+| GraphQL: project not found / can’t resolve ProjectV2 | Wrong org login/number, or token can’t access org project | Confirm workflow env `ORG_LOGIN=Clay-Agency` + correct `PROJECT_NUMBER`, and **Resource owner = Clay-Agency**. |
+| Some Project items never update | Token lacks repo access for the item’s repo | Add those repos to token access (or select “All repositories”). |
+| Org requires SAML SSO and token isn’t authorized | Token not SSO-authorized | Authorize the token for Clay-Agency in GitHub settings. |
+
+### Validation checklist (PAT)
+
+After setting `PROJECT_STATUS_SYNC_TOKEN`:
+
+1) **Run the read-only auth smoke test**
+- **Actions** → **Projects v2 auth smoke test** → **Run workflow**
+- Expected: succeeds and the **Summary** shows Project info + fields.
+
+2) **Run the real sync workflow**
+- **Actions** → **Sync Clay Project status** → **Run workflow**
+- Expected: succeeds and updates Project #1 items as applicable.
+
+3) (Optional) Confirm the daily preflight is green
+- **Actions** → **Projects v2 auth preflight** → latest run → should pass.
 
 ---
 
