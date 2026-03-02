@@ -56,7 +56,7 @@ PY
           die() { echo "ERROR: $*" >&2; exit 1; }
 
           echo "Fetching landing page: $PILOT_URL"
-          http_code=$(curl -sSL -o index.html -w '%{http_code}' "$PILOT_URL" || true)
+          http_code=$(curl -sS --show-error -L --retry 3 --retry-all-errors --connect-timeout 10 --max-time 30 -o index.html -w '%{http_code}' "$PILOT_URL" || true)
           if [[ "$http_code" != "200" ]]; then
             die "Landing page did not return HTTP 200 (got $http_code) for $PILOT_URL"
           fi
@@ -98,7 +98,7 @@ PY
           js_first=$(echo "$js_paths" | head -n1)
           js_url="$base_origin$js_first"
           echo "Checking JS asset: $js_url"
-          js_code=$(curl -sSL -o /dev/null -w '%{http_code}' "$js_url" || true)
+          js_code=$(curl -sS --show-error -L --retry 3 --retry-all-errors --connect-timeout 10 --max-time 30 -o /dev/null -w '%{http_code}' "$js_url" || true)
           if [[ "$js_code" != "200" ]]; then
             die "Referenced JS asset did not return HTTP 200 (got $js_code): $js_url"
           fi
@@ -107,7 +107,7 @@ PY
           css_first=$(echo "$css_paths" | head -n1)
           css_url="$base_origin$css_first"
           echo "Checking CSS asset: $css_url"
-          css_code=$(curl -sSL -o /dev/null -w '%{http_code}' "$css_url" || true)
+          css_code=$(curl -sS --show-error -L --retry 3 --retry-all-errors --connect-timeout 10 --max-time 30 -o /dev/null -w '%{http_code}' "$css_url" || true)
           if [[ "$css_code" != "200" ]]; then
             die "Referenced CSS asset did not return HTTP 200 (got $css_code): $css_url"
           fi
