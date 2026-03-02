@@ -1,0 +1,115 @@
+name: Pages smoke check
+
+on:
+  schedule:
+    # Weekly at 03:00 UTC on Mondays
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Read pilot URL
+        id: pilot
+        shell: bash
+        run: |
+          set -euo pipefail
+          file='docs/pilot/pilot-url.md'
+          if [[ ! -f "$file" ]]; then
+            echo "ERROR: Expected $file to exist (pilot URL single source of truth)." >&2
+            exit 1
+          fi
+
+          url=$(python3 - <<'PY'
+import re, pathlib
+text = pathlib.Path('docs/pilot/pilot-url.md').read_text(encoding='utf-8')
+m = re.search(r"https?://[^ )]+", text)
+print(m.group(0) if m else "")
+PY
+          )
+
+          if [[ -z "${url:-}" ]]; then
+            echo "ERROR: Could not find a URL in $file." >&2
+            echo "Tip: ensure the file contains a line like '- https://…'" >&2
+            exit 1
+          fi
+
+          echo "Pilot URL: $url"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      - name: Fetch landing page and validate assets
+        shell: bash
+        env:
+          PILOT_URL: ${{ steps.pilot.outputs.url }}
+        run: |
+          set -euo pipefail
+
+          die() { echo "ERROR: $*" >&2; exit 1; }
+
+          echo "Fetching landing page: $PILOT_URL"
+          http_code=$(curl -sSL -o index.html -w '%{http_code}' "$PILOT_URL" || true)
+          if [[ "$http_code" != "200" ]]; then
+            die "Landing page did not return HTTP 200 (got $http_code) for $PILOT_URL"
+          fi
+
+          # Ensure we are not accidentally serving Vite dev references.
+          if grep -qE '(["\x27])\/src\/' index.html; then
+            echo "--- index.html (first 80 lines) ---" >&2
+            sed -n '1,80p' index.html >&2 || true
+            die "Landing page HTML contains '/src/' references (expected built assets under /novel-task-tracker/assets/)."
+          fi
+
+          # Ensure the built asset path is present somewhere in the HTML.
+          if ! grep -q '/novel-task-tracker/assets/' index.html; then
+            echo "--- index.html (first 120 lines) ---" >&2
+            sed -n '1,120p' index.html >&2 || true
+            die "Landing page HTML did not reference '/novel-task-tracker/assets/'."
+          fi
+
+          # Collect asset URLs referenced by the page.
+          js_paths=$(grep -Eo '/novel-task-tracker/assets/[^"\x27 ?]+\.js' index.html | sort -u || true)
+          css_paths=$(grep -Eo '/novel-task-tracker/assets/[^"\x27 ?]+\.css' index.html | sort -u || true)
+
+          if [[ -z "${js_paths}" ]]; then
+            die "No JS assets (*.js) referenced under /novel-task-tracker/assets/ were found in landing page HTML."
+          fi
+          if [[ -z "${css_paths}" ]]; then
+            die "No CSS assets (*.css) referenced under /novel-task-tracker/assets/ were found in landing page HTML."
+          fi
+
+          base_origin=$(python3 - <<'PY'
+import os, urllib.parse
+u = os.environ['PILOT_URL']
+sp = urllib.parse.urlsplit(u)
+print(f"{sp.scheme}://{sp.netloc}")
+PY
+          )
+
+          # Check at least one JS asset returns 200.
+          js_first=$(echo "$js_paths" | head -n1)
+          js_url="$base_origin$js_first"
+          echo "Checking JS asset: $js_url"
+          js_code=$(curl -sSL -o /dev/null -w '%{http_code}' "$js_url" || true)
+          if [[ "$js_code" != "200" ]]; then
+            die "Referenced JS asset did not return HTTP 200 (got $js_code): $js_url"
+          fi
+
+          # Check at least one CSS asset returns 200.
+          css_first=$(echo "$css_paths" | head -n1)
+          css_url="$base_origin$css_first"
+          echo "Checking CSS asset: $css_url"
+          css_code=$(curl -sSL -o /dev/null -w '%{http_code}' "$css_url" || true)
+          if [[ "$css_code" != "200" ]]; then
+            die "Referenced CSS asset did not return HTTP 200 (got $css_code): $css_url"
+          fi
+
+          echo "Smoke check passed. Landing page and referenced assets returned HTTP 200."
