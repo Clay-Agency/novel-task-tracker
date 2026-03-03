@@ -1,6 +1,6 @@
-# Decision log (DR)
+# Decision log (DR / ADR)
 
-This folder is our lightweight **decision log**: short records of important project decisions so we can understand *what we decided* and *why* later.
+This folder is our lightweight **decision log** (ADR-style): short records of important project decisions so we can understand *what we decided* and *why* later.
 
 ## When to add a decision record
 
