@@ -11,8 +11,10 @@ Single source of truth for the pilot URL: [`docs/pilot/pilot-url.md`](./docs/pil
 
 Quick filter: [`label:needs-decision`](https://github.com/Clay-Agency/novel-task-tracker/issues?q=is%3Aopen+label%3Aneeds-decision)
 
-- **Projects v2 auth for Project #1 automation**: decide GitHub App vs PAT (so Actions can update Project fields like Done date/Needs decision). [Decision record](https://github.com/Clay-Agency/novel-task-tracker/issues/80#issuecomment-3941544627)
-- **Priority taxonomy (P0–P3 vs P0–P2)**: decide whether to add P3 to Project #1 (or collapse P3 into P2). [Decision record](https://github.com/Clay-Agency/novel-task-tracker/issues/126#issuecomment-3986370623)
+- **#80 Projects v2 auth for Project #1 automation**: decide **GitHub App vs PAT** (so Actions can update Project fields like Done date/Needs decision). Links: [issue](https://github.com/Clay-Agency/novel-task-tracker/issues/80), [decision record](https://github.com/Clay-Agency/novel-task-tracker/issues/80#issuecomment-3941544627), [runbook](./docs/ops/projects-v2-auth-runbook.md)
+- **#126 Priority taxonomy (P0–P3 vs P0–P2)**: decide whether to **add P3** to Project #1 (or collapse P3 into P2). Links: [issue](https://github.com/Clay-Agency/novel-task-tracker/issues/126), [decision memo](https://github.com/Clay-Agency/novel-task-tracker/issues/126#issuecomment-3993404482)
+
+Checklist: [`docs/ops/open-decisions.md`](./docs/ops/open-decisions.md)
 
 ## Prerequisites
 - Node.js 18+
