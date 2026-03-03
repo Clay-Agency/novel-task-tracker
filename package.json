@@ -13,6 +13,7 @@
     "test:watch": "vitest",
     "e2e": "playwright test",
     "check:workflows": "ruby -e 'require \"yaml\"; Dir[\".github/workflows/*.{yml,yaml}\"].sort.each { |f| YAML.load_file(f); puts \"OK #{f}\" }'",
+    "docs:links": "lychee --offline --exclude '^https?://' --exclude '^mailto:' README.md docs",
     "verify:core": "npm run check:workflows && npm run lint && npm run typecheck && npm test && npm run build"
   },
   "dependencies": {
