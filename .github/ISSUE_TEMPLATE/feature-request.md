@@ -9,6 +9,10 @@ assignees: ''
 ## Problem to solve
 What user/problem gap are we addressing?
 
+
+## Needs decision?
+- [ ] This requires a decision from Clay (if checked: set Project field `Needs decision: True` and add label `needs-decision`)
+
 ## Proposed solution
 Describe the desired behavior or change.
 

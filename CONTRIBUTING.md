@@ -16,6 +16,10 @@ Use the issue templates under `.github/ISSUE_TEMPLATE/`:
 - **QA finding** (`qa-finding.md`): findings mapped to checklist docs in `docs/qa/`
 - **Feature request** (`feature-request.md`): enhancement proposals with problem + success criteria
 
+## Needs-decision convention
+
+If an issue is blocked on a **decision from Clay**, set the Project field `Needs decision: True` and apply the repo label `needs-decision` (easy filtering outside the Projects UI).
+
 For QA findings (and QA-discovered bugs), include a direct link to the relevant checklist section:
 - `docs/qa/responsive-qa-checklist.md`
 - `docs/qa/pilot-readiness-cross-browser-plan.md`
