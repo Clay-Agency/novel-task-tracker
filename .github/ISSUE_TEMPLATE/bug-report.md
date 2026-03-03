@@ -9,6 +9,10 @@ assignees: ''
 ## Summary
 A short description of the bug.
 
+
+## Needs decision?
+- [ ] This requires a decision from Clay (if checked: set Project field `Needs decision: True` and add label `needs-decision`)
+
 ## Environment
 - App version/commit:
 - Browser + version:

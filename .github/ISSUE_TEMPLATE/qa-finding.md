@@ -9,6 +9,10 @@ assignees: ''
 ## Finding summary
 Describe the observed issue/risk.
 
+
+## Needs decision?
+- [ ] This requires a decision from Clay (if checked: set Project field `Needs decision: True` and add label `needs-decision`)
+
 ## Checklist mapping (required)
 Link the exact checklist item/section under `docs/qa/` that this finding maps to.
 - Checklist document:
