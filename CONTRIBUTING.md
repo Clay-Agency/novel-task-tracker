@@ -33,12 +33,18 @@ CI validates **internal/relative** links in `README.md` and `docs/**` (external 
 Run locally:
 
 ```bash
-# Install lychee first (one option):
+# Option A: run via npm (requires lychee installed)
 #   brew install lychee
-# or: cargo install lychee
+#   # or: cargo install lychee
 
-lychee --offline --exclude '^https?://' --exclude '^mailto:' README.md docs
+npm run docs:links
+
+# Option B: Docker (no local lychee install required)
+docker run --rm -v "$(pwd)":/workdir -w /workdir \
+  ghcr.io/lycheeverse/lychee:latest \
+  --no-progress --offline --exclude '^https?://' --exclude '^mailto:' README.md docs
 ```
+
 
 ## 2-stage review process (required)
 
