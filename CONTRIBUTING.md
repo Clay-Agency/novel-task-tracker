@@ -20,6 +20,8 @@ Use the issue templates under `.github/ISSUE_TEMPLATE/`:
 
 If an issue is blocked on a **decision from Clay**, set the Project field `Needs decision: True` and apply the repo label `needs-decision` (easy filtering outside the Projects UI).
 
+When closing a `needs-decision` item, add a short decision record to `docs/decisions/` (use the DR template) and link it from the issue/PR.
+
 For QA findings (and QA-discovered bugs), include a direct link to the relevant checklist section:
 - `docs/qa/responsive-qa-checklist.md`
 - `docs/qa/pilot-readiness-cross-browser-plan.md`
