@@ -1,0 +1,29 @@
+name: Markdown link check
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  check-markdown-links:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # We only validate internal/relative links to keep this workflow fast and non-flaky.
+      # External URLs are intentionally skipped.
+      - name: Check internal Markdown links (README.md + docs/**)
+        uses: lycheeverse/lychee-action@v2
+        with:
+          fail: true
+          args: >-
+            --no-progress
+            --offline
+            --exclude '^https?://'
+            --exclude '^mailto:'
+            README.md docs
