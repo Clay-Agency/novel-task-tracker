@@ -42,7 +42,7 @@ npm run docs:links
 # Option B: Docker (no local lychee install required)
 docker run --rm -v "$(pwd)":/workdir -w /workdir \
   ghcr.io/lycheeverse/lychee:latest \
-  --offline --exclude '^https?://' --exclude '^mailto:' README.md docs
+  --no-progress --offline --exclude '^https?://' --exclude '^mailto:' README.md docs
 ```
 
 
