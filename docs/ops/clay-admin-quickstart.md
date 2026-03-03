@@ -89,15 +89,21 @@ If Projects v2 auth isn’t ready yet, you can still get **basic** automation us
 Project:
 - Clay-Agency Project #1: https://github.com/orgs/Clay-Agency/projects/1
 
-### What this can (and can’t) do
+### Built-in workflows are Status-only
+
+GitHub’s built-in Project automations can only update the built-in **Status** field.
 
 ✅ Can:
 - When an Issue is **closed** or a PR is **merged/closed**, automatically set **Status = Done** (if configured).
 
-❌ Cannot (limitations vs our custom Actions workflow):
-- Set **Done date**.
-- Clear **Needs decision**.
+❌ Cannot:
+- Set or clear **custom fields** (e.g., **Done date**, **Needs decision**).
 - Perform repo-specific logic or field mapping beyond the built-in rules.
+
+Docs:
+- Built-in automations: https://docs.github.com/en/issues/planning-and-tracking-with-projects/automating-your-project/using-the-built-in-automations
+- Automating Projects using Actions: https://docs.github.com/en/issues/planning-and-tracking-with-projects/automating-your-project/automating-projects-using-actions
+- Automating with the API: https://docs.github.com/en/issues/planning-and-tracking-with-projects/automating-your-project/using-the-api-to-manage-projects
 
 ### UI steps
 
