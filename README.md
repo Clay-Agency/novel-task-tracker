@@ -7,6 +7,11 @@ GitHub Pages: https://clay-agency.github.io/novel-task-tracker/
 
 Single source of truth for the pilot URL: [`docs/pilot/pilot-url.md`](./docs/pilot/pilot-url.md)
 
+## Open decisions
+
+- **Projects v2 auth for Project #1 automation**: decide GitHub App vs PAT (so Actions can update Project fields like Done date/Needs decision). [Decision record](https://github.com/Clay-Agency/novel-task-tracker/issues/80#issuecomment-3941544627)
+- **Priority taxonomy (P0–P3 vs P0–P2)**: decide whether to add P3 to Project #1 (or collapse P3 into P2). [Decision record](https://github.com/Clay-Agency/novel-task-tracker/issues/126#issuecomment-3986370623)
+
 ## Prerequisites
 - Node.js 18+
 - npm 9+
