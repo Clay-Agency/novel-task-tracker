@@ -26,6 +26,20 @@ For QA findings (and QA-discovered bugs), include a direct link to the relevant 
 - `docs/qa/responsive-qa-checklist.md`
 - `docs/qa/pilot-readiness-cross-browser-plan.md`
 
+## Markdown link check
+
+CI validates **internal/relative** links in `README.md` and `docs/**` (external URLs are intentionally skipped to avoid flaky failures).
+
+Run locally:
+
+```bash
+# Install lychee first (one option):
+#   brew install lychee
+# or: cargo install lychee
+
+lychee --offline --exclude '^https?://' --exclude '^mailto:' README.md docs
+```
+
 ## 2-stage review process (required)
 
 ### Stage 1 — Self-review (author, xhigh reasoning)
