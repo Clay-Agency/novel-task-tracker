@@ -11,6 +11,14 @@ Single source of truth for the pilot URL: [`docs/pilot/pilot-url.md`](./docs/pil
 
 Quick filter: [`label:needs-decision`](https://github.com/Clay-Agency/novel-task-tracker/issues?q=is%3Aopen+label%3Aneeds-decision)
 
+### `needs-decision` (how to use it)
+
+Use the `needs-decision` label when an issue/PR is blocked on an **explicit decision from Clay**.
+
+- Apply/remove guidelines: [`CONTRIBUTING.md#needs-decision-convention`](./CONTRIBUTING.md#needs-decision-convention)
+- Canonical daily snapshot issue (automation overwrites the body): search for [`Needs-decision snapshot (automated)`](https://github.com/Clay-Agency/novel-task-tracker/issues?q=is%3Aissue+is%3Aopen+%22Needs-decision+snapshot+%28automated%29%22)
+- Run snapshot manually: [Actions → “Needs-decision daily snapshot”](https://github.com/Clay-Agency/novel-task-tracker/actions/workflows/needs-decision-snapshot.yml) → **Run workflow** (no Projects v2 auth required)
+
 - **#80 Projects v2 auth for Project #1 automation**: decide **GitHub App vs PAT** (so Actions can update Project fields like Done date/Needs decision). Links: [issue](https://github.com/Clay-Agency/novel-task-tracker/issues/80), [decision record](https://github.com/Clay-Agency/novel-task-tracker/issues/80#issuecomment-3941544627), [runbook](./docs/ops/projects-v2-auth-runbook.md)
 - **#126 Priority taxonomy (P0–P3 vs P0–P2)**: decide whether to **add P3** to Project #1 (or collapse P3 into P2). Links: [issue](https://github.com/Clay-Agency/novel-task-tracker/issues/126), [decision memo](https://github.com/Clay-Agency/novel-task-tracker/issues/126#issuecomment-3993404482)
 

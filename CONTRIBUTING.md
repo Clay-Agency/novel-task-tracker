@@ -28,9 +28,16 @@ Use the issue templates under `.github/ISSUE_TEMPLATE/`:
 
 ## Needs-decision convention
 
-If an issue is blocked on a **decision from Clay**, set the Project field `Needs decision: True` and apply the repo label `needs-decision` (easy filtering outside the Projects UI).
+If an issue/PR is blocked on an **explicit decision from Clay**, apply the repo label `needs-decision`.
 
-When closing a `needs-decision` item, add a short decision record to `docs/decisions/` (use the DR template) and link it from the issue/PR.
+Optional (if you’re using the Project #1 board): also set the Project field `Needs decision: True`.
+
+Canonical snapshot (updated daily): the single issue titled `Needs-decision snapshot (automated)`
+- Find it: https://github.com/Clay-Agency/novel-task-tracker/issues?q=is%3Aissue+is%3Aopen+%22Needs-decision+snapshot+%28automated%29%22
+- Run manually: https://github.com/Clay-Agency/novel-task-tracker/actions/workflows/needs-decision-snapshot.yml (Actions → "Needs-decision daily snapshot" → Run workflow)
+- Details: [`docs/ops/needs-decision-snapshot.md`](./docs/ops/needs-decision-snapshot.md)
+
+When the decision is made, **remove `needs-decision`** and add a short decision record to `docs/decisions/` (use the DR template) and link it from the issue/PR.
 
 For QA findings (and QA-discovered bugs), include a direct link to the relevant checklist section:
 - `docs/qa/responsive-qa-checklist.md`
