@@ -60,6 +60,7 @@ npm run build
 Project #1 status sync workflows require **GitHub Projects v2 auth** (separate token).
 Runbook: [`docs/ops/projects-v2-auth-runbook.md`](./docs/ops/projects-v2-auth-runbook.md)
 Clay admin quickstart: [`docs/ops/clay-admin-quickstart.md`](./docs/ops/clay-admin-quickstart.md)
+Branch protection runbook (require **Verify (core)** on `main`): [`docs/ops/branch-protection.md`](./docs/ops/branch-protection.md)
 Tracking issue: [#80](https://github.com/Clay-Agency/novel-task-tracker/issues/80)
 
 ## CI maintenance runbook (Issue #72)
