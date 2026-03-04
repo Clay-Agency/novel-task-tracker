@@ -46,6 +46,19 @@ docker run --rm -v "$(pwd)":/workdir -w /workdir \
 ```
 
 
+## Local verification commands
+
+Use the quick check during development, and full check before final review:
+
+```bash
+# Fast inner-loop verification (no build)
+npm run verify:quick
+
+# Full pre-merge verification (includes build)
+npm run verify:core
+```
+
+
 ## 2-stage review process (required)
 
 ### Stage 1 — Self-review (author, xhigh reasoning)
