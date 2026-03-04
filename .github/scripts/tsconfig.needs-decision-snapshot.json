@@ -10,5 +10,5 @@
     "rootDir": ".",
     "outDir": "../scripts-dist"
   },
-  "include": ["needs-decision-snapshot.ts"]
+  "include": ["needs-decision-snapshot.ts", "needs-decision-snapshot-lib.ts"]
 }
