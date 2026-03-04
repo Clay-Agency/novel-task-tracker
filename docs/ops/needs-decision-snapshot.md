@@ -15,11 +15,13 @@ The workflow looks for an open issue titled:
 
 - `Needs-decision snapshot (automated)`
 
+Find it quickly (search): https://github.com/Clay-Agency/novel-task-tracker/issues?q=is%3Aissue+is%3Aopen+%22Needs-decision+snapshot+%28automated%29%22
+
 If it can’t find one, it creates it and uses that new issue as the canonical artifact.
 
 ## How to run manually
 
-1. Go to **Actions → Needs-decision daily snapshot**
+1. Go to **Actions → Needs-decision daily snapshot** (or open https://github.com/Clay-Agency/novel-task-tracker/actions/workflows/needs-decision-snapshot.yml)
 2. Click **Run workflow**
 
 Optional inputs:
