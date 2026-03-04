@@ -30,11 +30,11 @@ jobs:
           fi
 
           url=$(python3 - <<'PY'
-import re, pathlib
-text = pathlib.Path('docs/pilot/pilot-url.md').read_text(encoding='utf-8')
-m = re.search(r"https?://[^ )]+", text)
-print(m.group(0) if m else "")
-PY
+          import re, pathlib
+          text = pathlib.Path('docs/pilot/pilot-url.md').read_text(encoding='utf-8')
+          m = re.search(r"https?://[^ )]+", text)
+          print(m.group(0) if m else "")
+          PY
           )
 
           if [[ -z "${url:-}" ]]; then
@@ -87,11 +87,11 @@ PY
           fi
 
           base_origin=$(python3 - <<'PY'
-import os, urllib.parse
-u = os.environ['PILOT_URL']
-sp = urllib.parse.urlsplit(u)
-print(f"{sp.scheme}://{sp.netloc}")
-PY
+          import os, urllib.parse
+          u = os.environ['PILOT_URL']
+          sp = urllib.parse.urlsplit(u)
+          print(f"{sp.scheme}://{sp.netloc}")
+          PY
           )
 
           # Check at least one JS asset returns 200.
