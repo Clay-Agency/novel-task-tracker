@@ -2,6 +2,16 @@
 
 Thanks for contributing to **novel-task-tracker**.
 
+## Local Node version
+
+CI runs on Node.js 20. To align local behavior with CI, use the repo-pinned version:
+
+```bash
+nvm use
+```
+
+(`.nvmrc` is set to `20`.)
+
 ## Branch + PR flow
 
 1. Branch from `main` with `feat/issue-<number>-<summary>`.
