@@ -43,9 +43,12 @@ npm run docs:links
 #   Optional readiness check (daemon reachable):
 #   docker info >/dev/null
 
-docker run --rm -v "$(pwd)":/workdir -w /workdir \
-  ghcr.io/lycheeverse/lychee:latest \
-  --no-progress --offline --exclude '^https?://' --exclude '^mailto:' README.md docs
+npm run docs:links:docker
+
+# (Equivalent direct command)
+# docker run --rm -v "$(pwd)":/workdir -w /workdir \
+#   ghcr.io/lycheeverse/lychee:latest \
+#   --no-progress --offline --exclude '^https?://' --exclude '^mailto:' README.md docs
 
 # If you see "Cannot connect to the Docker daemon", start Docker/OrbStack first,
 # then rerun the command.

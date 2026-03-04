@@ -14,6 +14,7 @@
     "e2e": "playwright test",
     "check:workflows": "ruby -e 'require \"yaml\"; Dir[\".github/workflows/*.{yml,yaml}\"].sort.each { |f| YAML.load_file(f); puts \"OK #{f}\" }'",
     "docs:links": "lychee --no-progress --offline --exclude '^https?://' --exclude '^mailto:' README.md docs",
+    "docs:links:docker": "docker run --rm -v \"$PWD\":/workdir -w /workdir ghcr.io/lycheeverse/lychee:latest --no-progress --offline --exclude '^https?://' --exclude '^mailto:' README.md docs",
     "verify:quick": "npm run check:workflows && npm run lint && npm run typecheck && npm test",
     "verify:core": "npm run verify:quick && npm run build"
   },
