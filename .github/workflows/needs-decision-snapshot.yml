@@ -1,0 +1,51 @@
+name: Needs-decision daily snapshot
+
+on:
+  workflow_dispatch:
+    inputs:
+      snapshot_issue_number:
+        description: 'Issue number to update (optional; otherwise auto-detected/created)'
+        required: false
+      dry_run:
+        description: 'If true, do not write; just log preview (true/false)'
+        required: false
+        default: 'false'
+  schedule:
+    # Daily at 00:15 UTC.
+    - cron: '15 0 * * *'
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+
+concurrency:
+  group: needs-decision-snapshot
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build snapshot script
+        run: npx tsc -p .github/scripts/tsconfig.needs-decision-snapshot.json
+
+      - name: Update snapshot issue
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SNAPSHOT_ISSUE_NUMBER: ${{ github.event.inputs.snapshot_issue_number }}
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
+        run: node .github/scripts-dist/needs-decision-snapshot.js
