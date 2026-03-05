@@ -5,6 +5,16 @@ This is a **GitHub-first**, low-friction checklist for Clay (org admin) to unblo
 If you need full details (copy/paste commands, troubleshooting, rotation/incident response), use the canonical runbook:
 - **Projects v2 auth runbook**: [`docs/ops/projects-v2-auth-runbook.md`](./projects-v2-auth-runbook.md)
 
+## Operational guardrails (recommended)
+
+- **Protect `main` (required check gate)**: [`docs/ops/branch-protection.md`](./branch-protection.md)
+  - Require **Verify (core)** to pass + at least **1 approval** before merge.
+  - Blocks force-push/deletion and prevents bypassing the CI gate.
+
+- **Needs-decision daily snapshot (low-noise automation)**: [`docs/ops/needs-decision-snapshot.md`](./needs-decision-snapshot.md)
+  - Maintains a single canonical Issue: search **"Needs-decision snapshot (automated)"** → https://github.com/Clay-Agency/novel-task-tracker/issues?q=is%3Aissue+is%3Aopen+%22Needs-decision+snapshot+%28automated%29%22
+  - Workflow: https://github.com/Clay-Agency/novel-task-tracker/actions/workflows/needs-decision-snapshot.yml (uses only `GITHUB_TOKEN`; **no Projects v2 auth**)
+
 ## Security reminders (do this first)
 
 - **Never paste** private keys (PEM), PATs, or other secrets into **issues/PRs/Discord/chat**.
