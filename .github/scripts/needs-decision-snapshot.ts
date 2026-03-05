@@ -8,8 +8,9 @@
  * - Low-noise: updates one existing issue body (or creates it once if missing).
  */
 
-import { buildBody, LABEL, SNAPSHOT_TITLE, splitPrsAndIssues } from './needs-decision-snapshot-lib.js';
+import { buildBody, LABEL, SNAPSHOT_ISSUE_LABEL, SNAPSHOT_TITLE, splitPrsAndIssues } from './needs-decision-snapshot-lib.js';
 import type { GitHubSearchItem } from './needs-decision-snapshot-lib.js';
+import { pathToFileURL } from 'node:url';
 
 type GitHubSearchResponse = {
   total_count: number;
@@ -98,6 +99,7 @@ async function createIssue(owner: string, repo: string, body: string): Promise<G
     body: JSON.stringify({
       title: SNAPSHOT_TITLE,
       body,
+      labels: [SNAPSHOT_ISSUE_LABEL],
     }),
   });
 }
@@ -124,6 +126,14 @@ async function updateIssue(params: {
       body,
       ...(state ? { state } : {}),
     }),
+  });
+}
+
+async function addLabelsToIssue(owner: string, repo: string, issueNumber: number, labels: string[]): Promise<void> {
+  await ghFetch<unknown>(`/repos/${owner}/${repo}/issues/${issueNumber}/labels`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ labels }),
   });
 }
 
@@ -158,7 +168,7 @@ async function findOrCreateSnapshotIssueNumber(owner: string, repo: string, repo
   return created.number;
 }
 
-async function main(): Promise<void> {
+export async function main(): Promise<void> {
   const { owner, repo, full: repoFull } = repoFromEnv();
   const dryRun = toBool(process.env.DRY_RUN, false);
 
@@ -182,10 +192,13 @@ async function main(): Promise<void> {
   }
 
   const updated = await updateIssue({ owner, repo, issueNumber, body, reopenIfClosed: true });
+  await addLabelsToIssue(owner, repo, issueNumber, [SNAPSHOT_ISSUE_LABEL]);
   console.log(`Updated snapshot issue: ${updated.html_url}`);
 }
 
-main().catch((e) => {
-  console.error(e);
-  process.exitCode = 1;
-});
+if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {
+  main().catch((e) => {
+    console.error(e);
+    process.exitCode = 1;
+  });
+}
