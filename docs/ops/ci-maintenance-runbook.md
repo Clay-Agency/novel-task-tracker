@@ -6,6 +6,9 @@ This runbook covers the scheduled CI maintenance workflow used to catch regressi
 - File: [`.github/workflows/maintenance-ci.yml`](../../.github/workflows/maintenance-ci.yml)
 - Workflow name in GitHub Actions: **Scheduled CI Maintenance**
 
+## Related runbooks
+- Projects v2 auth (GitHub App) setup + troubleshooting: [`docs/ops/projects-v2-auth-runbook.md`](./projects-v2-auth-runbook.md)
+
 ## Trigger modes
 The workflow runs in two ways:
 1. **Automatic schedule**: weekly on Monday at `00:00 UTC`
