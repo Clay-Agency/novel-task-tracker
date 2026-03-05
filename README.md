@@ -57,10 +57,14 @@ npm run build
 ```
 
 ## Ops / Automation
+
+### Quick links
+- Projects v2 auth runbook: [`docs/ops/projects-v2-auth-runbook.md`](./docs/ops/projects-v2-auth-runbook.md)
+- Project #1 field conventions: [`docs/ops/project-1-field-conventions.md`](./docs/ops/project-1-field-conventions.md)
+- Clay admin quickstart: [`docs/ops/clay-admin-quickstart.md`](./docs/ops/clay-admin-quickstart.md)
+- Branch protection runbook (require **Verify (core)** on `main`): [`docs/ops/branch-protection.md`](./docs/ops/branch-protection.md)
+
 Project #1 status sync workflows require **GitHub Projects v2 auth** (separate token).
-Runbook: [`docs/ops/projects-v2-auth-runbook.md`](./docs/ops/projects-v2-auth-runbook.md)
-Clay admin quickstart: [`docs/ops/clay-admin-quickstart.md`](./docs/ops/clay-admin-quickstart.md)
-Branch protection runbook (require **Verify (core)** on `main`): [`docs/ops/branch-protection.md`](./docs/ops/branch-protection.md)
 Tracking issue: [#80](https://github.com/Clay-Agency/novel-task-tracker/issues/80)
 
 ## CI maintenance runbook (Issue #72)
