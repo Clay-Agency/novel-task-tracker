@@ -11,6 +11,9 @@ export type GitHubSearchItem = {
 export const SNAPSHOT_TITLE = 'Needs-decision snapshot (automated)';
 export const LABEL = 'needs-decision';
 
+// Label applied to the canonical snapshot issue so it can be excluded from Project auto-add rules.
+export const SNAPSHOT_ISSUE_LABEL = 'automation';
+
 export function fmtDate(dateLike?: string): string {
   if (!dateLike) return '';
   const d = new Date(dateLike);
