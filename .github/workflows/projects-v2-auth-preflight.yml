@@ -24,44 +24,52 @@ jobs:
         shell: bash
         env:
           # Prefer vars.PROJECTS_APP_ID, but allow secrets.PROJECTS_APP_ID as a legacy fallback.
+          VARS_PROJECTS_APP_ID: ${{ vars.PROJECTS_APP_ID }}
+          SECRETS_PROJECTS_APP_ID: ${{ secrets.PROJECTS_APP_ID }}
           PROJECTS_APP_ID: ${{ vars.PROJECTS_APP_ID || secrets.PROJECTS_APP_ID }}
           PROJECTS_APP_PRIVATE_KEY: ${{ secrets.PROJECTS_APP_PRIVATE_KEY }}
           PROJECT_STATUS_SYNC_TOKEN: ${{ secrets.PROJECT_STATUS_SYNC_TOKEN }}
         run: |
           set -euo pipefail
 
+          has_vars_app_id=false
+          has_secrets_app_id=false
           has_app_id=false
           has_app_key=false
           has_pat=false
 
+          if [ -n "${VARS_PROJECTS_APP_ID}" ]; then has_vars_app_id=true; fi
+          if [ -n "${SECRETS_PROJECTS_APP_ID}" ]; then has_secrets_app_id=true; fi
           if [ -n "${PROJECTS_APP_ID}" ]; then has_app_id=true; fi
           if [ -n "${PROJECTS_APP_PRIVATE_KEY}" ]; then has_app_key=true; fi
           if [ -n "${PROJECT_STATUS_SYNC_TOKEN}" ]; then has_pat=true; fi
 
           docs_url="https://github.com/${GITHUB_REPOSITORY}/blob/main/docs/ops/projects-v2-auth-runbook.md"
 
-          {
-            echo "# Projects v2 auth preflight"
-            echo ""
-            echo "This workflow checks that **at least one** supported auth configuration is present:"
-            echo "- GitHub App (preferred): vars.PROJECTS_APP_ID + secrets.PROJECTS_APP_PRIVATE_KEY"
-            echo "- PAT fallback: secrets.PROJECT_STATUS_SYNC_TOKEN"
-            echo ""
-            echo "Docs: ${docs_url}"
-            echo ""
-            echo "## Detected"
-            echo "- PROJECTS_APP_ID present: ${has_app_id}"
-            echo "- PROJECTS_APP_PRIVATE_KEY present: ${has_app_key}"
-            echo "- PROJECT_STATUS_SYNC_TOKEN present: ${has_pat}"
-          } >> "$GITHUB_STEP_SUMMARY"
+          append() { printf '%s\n' "$1" >> "$GITHUB_STEP_SUMMARY"; }
+          status() { if [ "$1" = true ]; then printf 'present'; else printf 'missing'; fi; }
+
+          append "# Projects v2 auth preflight"
+          append ""
+          append "This workflow checks that **at least one** supported auth configuration is present:"
+          append "- GitHub App (preferred): vars.PROJECTS_APP_ID + secrets.PROJECTS_APP_PRIVATE_KEY"
+          append "- PAT fallback: secrets.PROJECT_STATUS_SYNC_TOKEN"
+          append ""
+          append "Runbook: ${docs_url}"
+          append ""
+          append "## Detected (present/missing)"
+          append "- \`vars.PROJECTS_APP_ID\`: $(status ${has_vars_app_id})"
+          append "- \`secrets.PROJECTS_APP_ID\` (legacy): $(status ${has_secrets_app_id})"
+          append "- \`secrets.PROJECTS_APP_PRIVATE_KEY\`: $(status ${has_app_key})"
+          append "- \`secrets.PROJECT_STATUS_SYNC_TOKEN\` (PAT fallback): $(status ${has_pat})"
 
           if [ "$has_app_id" = true ] && [ "$has_app_key" = true ]; then
-            echo "Projects v2 auth preflight OK (GitHub App configured)." >> "$GITHUB_STEP_SUMMARY"
+            append "Projects v2 auth preflight OK (GitHub App configured)."
             exit 0
           fi
 
           if [ "$has_pat" = true ]; then
-            echo "Projects v2 auth preflight OK (PAT fallback configured)." >> "$GITHUB_STEP_SUMMARY"
+            append "Projects v2 auth preflight OK (PAT fallback configured)."
             exit 0
           fi
 
@@ -75,10 +83,10 @@ jobs:
           fi
 
           echo "::error title=Projects v2 auth preflight failed::${msg}"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "## Next steps" >> "$GITHUB_STEP_SUMMARY"
-          echo "1. Follow the runbook: ${docs_url}" >> "$GITHUB_STEP_SUMMARY"
-          echo "2. Set GitHub Actions vars/secrets (repo-level or org-level) with the exact names above." >> "$GITHUB_STEP_SUMMARY"
+          append ""
+          append "## Next steps"
+          append "1. Follow the runbook: ${docs_url}"
+          append "2. Set GitHub Actions vars/secrets (repo-level or org-level) with the exact names above."
 
           exit 1
 
