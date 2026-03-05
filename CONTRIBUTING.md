@@ -43,6 +43,11 @@ For QA findings (and QA-discovered bugs), include a direct link to the relevant 
 - `docs/qa/responsive-qa-checklist.md`
 - `docs/qa/pilot-readiness-cross-browser-plan.md`
 
+## Ops runbooks (Project #1 automation)
+
+- [Projects v2 auth runbook](./docs/ops/projects-v2-auth-runbook.md): Use when configuring or debugging GitHub Actions auth for workflows that read/update the Clay-Agency org Project #1 (GraphQL `ProjectV2`).
+- [Project #1 field conventions](./docs/ops/project-1-field-conventions.md): Use when triaging work on the Project #1 board or building automation that writes project fields (Status, Priority, Owner agent, Needs decision).
+
 ## Markdown link check
 
 CI validates **internal/relative** links in `README.md` and `docs/**` (external URLs are intentionally skipped to avoid flaky failures).
