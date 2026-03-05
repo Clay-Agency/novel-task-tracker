@@ -36,21 +36,36 @@ jobs:
         id: auth
         shell: bash
         env:
+          VARS_PROJECTS_APP_ID: ${{ vars.PROJECTS_APP_ID }}
+          SECRETS_PROJECTS_APP_ID: ${{ secrets.PROJECTS_APP_ID }}
           PROJECTS_APP_ID: ${{ vars.PROJECTS_APP_ID || secrets.PROJECTS_APP_ID }}
           PROJECTS_APP_PRIVATE_KEY: ${{ secrets.PROJECTS_APP_PRIVATE_KEY }}
           PROJECT_STATUS_SYNC_TOKEN: ${{ secrets.PROJECT_STATUS_SYNC_TOKEN }}
         run: |
-          if [ -n "$PROJECTS_APP_ID" ] && [ -n "$PROJECTS_APP_PRIVATE_KEY" ]; then
+          set -euo pipefail
+
+          has_vars_app_id=false
+          has_secrets_app_id=false
+          has_app_id=false
+          has_app_key=false
+          has_pat=false
+
+          if [ -n "${VARS_PROJECTS_APP_ID}" ]; then has_vars_app_id=true; fi
+          if [ -n "${SECRETS_PROJECTS_APP_ID}" ]; then has_secrets_app_id=true; fi
+          if [ -n "${PROJECTS_APP_ID}" ]; then has_app_id=true; fi
+          if [ -n "${PROJECTS_APP_PRIVATE_KEY}" ]; then has_app_key=true; fi
+          if [ -n "${PROJECT_STATUS_SYNC_TOKEN}" ]; then has_pat=true; fi
+
+          echo "has_vars_app_id=${has_vars_app_id}" >> "$GITHUB_OUTPUT"
+          echo "has_secrets_app_id=${has_secrets_app_id}" >> "$GITHUB_OUTPUT"
+          echo "has_app_key=${has_app_key}" >> "$GITHUB_OUTPUT"
+          echo "has_pat=${has_pat}" >> "$GITHUB_OUTPUT"
+
+          if [ "$has_app_id" = true ] && [ "$has_app_key" = true ]; then
             echo "use_app=true" >> "$GITHUB_OUTPUT"
-            echo "app_id=$PROJECTS_APP_ID" >> "$GITHUB_OUTPUT"
+            echo "app_id=${PROJECTS_APP_ID}" >> "$GITHUB_OUTPUT"
           else
             echo "use_app=false" >> "$GITHUB_OUTPUT"
-          fi
-
-          if [ -n "$PROJECT_STATUS_SYNC_TOKEN" ]; then
-            echo "has_pat=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "has_pat=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Create GitHub App token (preferred)
@@ -64,11 +79,42 @@ jobs:
           owner: ${{ env.ORG_LOGIN }}
           repositories: ${{ github.event.repository.name }}
 
-      - name: Fail (missing Projects v2 auth)
+      - name: Fail fast (missing/invalid Projects v2 auth)
         if: ${{ steps.app-token.outputs.token == '' && steps.auth.outputs.has_pat != 'true' }}
         shell: bash
+        env:
+          HAS_VARS_APP_ID: ${{ steps.auth.outputs.has_vars_app_id }}
+          HAS_SECRETS_APP_ID: ${{ steps.auth.outputs.has_secrets_app_id }}
+          HAS_APP_KEY: ${{ steps.auth.outputs.has_app_key }}
+          HAS_PAT: ${{ steps.auth.outputs.has_pat }}
+          USE_APP: ${{ steps.auth.outputs.use_app }}
+          APP_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          echo "::error title=No Projects v2 auth token available::Configure Projects v2 auth: GitHub App (preferred) set vars.PROJECTS_APP_ID + secrets.PROJECTS_APP_PRIVATE_KEY, OR PAT set secrets.PROJECT_STATUS_SYNC_TOKEN. Docs: https://github.com/Clay-Agency/novel-task-tracker/blob/main/docs/ops/projects-v2-auth-runbook.md ; Issue #80: https://github.com/Clay-Agency/novel-task-tracker/issues/80"
+          set -euo pipefail
+
+          docs_url="https://github.com/${GITHUB_REPOSITORY}/blob/main/docs/ops/projects-v2-auth-runbook.md"
+          issue80_url="https://github.com/${GITHUB_REPOSITORY}/issues/80"
+
+          append() { printf '%s\n' "$1" >> "$GITHUB_STEP_SUMMARY"; }
+          status() { if [ "$1" = true ] || [ "$1" = 'true' ]; then printf 'present'; else printf 'missing'; fi; }
+
+          append "# Projects v2 auth smoke test — auth not available"
+          append ""
+          append "Runbook: ${docs_url}"
+          append "Tracking issue: ${issue80_url}"
+          append ""
+          append "## Detected (present/missing)"
+          append "- \`vars.PROJECTS_APP_ID\`: $(status "${HAS_VARS_APP_ID}")"
+          append "- \`secrets.PROJECTS_APP_ID\` (legacy): $(status "${HAS_SECRETS_APP_ID}")"
+          append "- \`secrets.PROJECTS_APP_PRIVATE_KEY\`: $(status "${HAS_APP_KEY}")"
+          append "- \`secrets.PROJECT_STATUS_SYNC_TOKEN\` (PAT fallback): $(status "${HAS_PAT}")"
+          append ""
+          append "## Result"
+          append "- GitHub App config detected (app id + key): ${USE_APP}"
+          append "- GitHub App token created: $( [ -n "${APP_TOKEN}" ] && printf yes || printf no )"
+          append "- PAT available: ${HAS_PAT}"
+
+          echo "::error title=No Projects v2 auth token available::Missing or invalid Projects v2 auth configuration. See runbook: ${docs_url}"
           exit 1
 
       - name: Query ProjectV2 metadata and write summary

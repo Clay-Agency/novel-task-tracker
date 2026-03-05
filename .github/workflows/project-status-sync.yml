@@ -60,12 +60,47 @@ jobs:
           PAT_TOKEN: ${{ secrets.PROJECT_STATUS_SYNC_TOKEN }}
         run: node .github/scripts/select-projects-token.cjs
 
-      - name: Skip (missing Projects v2 auth)
+      - name: Skip fast (missing Projects v2 auth)
         if: ${{ steps.token.outputs.token == '' }}
         shell: bash
+        env:
+          VARS_PROJECTS_APP_ID: ${{ vars.PROJECTS_APP_ID }}
+          SECRETS_PROJECTS_APP_ID: ${{ secrets.PROJECTS_APP_ID }}
+          PROJECTS_APP_PRIVATE_KEY: ${{ secrets.PROJECTS_APP_PRIVATE_KEY }}
+          PROJECT_STATUS_SYNC_TOKEN: ${{ secrets.PROJECT_STATUS_SYNC_TOKEN }}
         run: |
-          echo "::warning title=No Projects v2 auth token available::Skipping Project status sync because no Projects v2 auth token is configured. Configure Projects v2 auth: GitHub App (preferred) set vars.PROJECTS_APP_ID + secrets.PROJECTS_APP_PRIVATE_KEY, OR PAT set secrets.PROJECT_STATUS_SYNC_TOKEN. Runbook: https://github.com/Clay-Agency/novel-task-tracker/blob/main/docs/ops/projects-v2-auth-runbook.md ; Tracking issue #80: https://github.com/Clay-Agency/novel-task-tracker/issues/80"
-          echo "Note: The scheduled auth check is handled by the 'Projects v2 auth preflight' workflow. See issue #121: https://github.com/Clay-Agency/novel-task-tracker/issues/121"
+          set -euo pipefail
+
+          docs_url="https://github.com/${GITHUB_REPOSITORY}/blob/main/docs/ops/projects-v2-auth-runbook.md"
+          issue80_url="https://github.com/${GITHUB_REPOSITORY}/issues/80"
+          issue121_url="https://github.com/${GITHUB_REPOSITORY}/issues/121"
+
+          has_vars_app_id=false
+          has_secrets_app_id=false
+          has_app_key=false
+          has_pat=false
+
+          if [ -n "${VARS_PROJECTS_APP_ID}" ]; then has_vars_app_id=true; fi
+          if [ -n "${SECRETS_PROJECTS_APP_ID}" ]; then has_secrets_app_id=true; fi
+          if [ -n "${PROJECTS_APP_PRIVATE_KEY}" ]; then has_app_key=true; fi
+          if [ -n "${PROJECT_STATUS_SYNC_TOKEN}" ]; then has_pat=true; fi
+
+          append() { printf '%s\n' "$1" >> "$GITHUB_STEP_SUMMARY"; }
+          status() { if [ "$1" = true ]; then printf 'present'; else printf 'missing'; fi; }
+
+          append "# Project status sync — skipped (Projects v2 auth missing)"
+          append ""
+          append "Runbook: ${docs_url}"
+          append "Tracking issue: ${issue80_url}"
+          append ""
+          append "## Detected (present/missing)"
+          append "- \`vars.PROJECTS_APP_ID\`: $(status ${has_vars_app_id})"
+          append "- \`secrets.PROJECTS_APP_ID\` (legacy): $(status ${has_secrets_app_id})"
+          append "- \`secrets.PROJECTS_APP_PRIVATE_KEY\`: $(status ${has_app_key})"
+          append "- \`secrets.PROJECT_STATUS_SYNC_TOKEN\` (PAT fallback): $(status ${has_pat})"
+
+          echo "::warning title=No Projects v2 auth token available::Skipping Project status sync because no Projects v2 auth token is configured. Configure Projects v2 auth: GitHub App (preferred) set vars.PROJECTS_APP_ID + secrets.PROJECTS_APP_PRIVATE_KEY, OR PAT set secrets.PROJECT_STATUS_SYNC_TOKEN. Runbook: ${docs_url} ; Tracking issue #80: ${issue80_url}"
+          echo "Note: The scheduled auth check is handled by the 'Projects v2 auth preflight' workflow. See issue #121: ${issue121_url}"
           exit 0
 
       - name: Sync Project item fields (Status / Done date / Needs decision)
