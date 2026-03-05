@@ -1,257 +1,74 @@
-# Runbook — GitHub Projects v2 auth (Clay org Project #1)
+# Runbook — Projects v2 auth (GitHub App) for Clay-Agency org Project #1
 
-This repo has GitHub Actions automation that reads and updates **Clay-Agency org Project #1** (GitHub **Projects v2 / `ProjectV2`**) via the **GraphQL API**.
+This repo has GitHub Actions automation that **reads + updates** the Clay-Agency **organization Project (Projects v2 / `ProjectV2`)** via the **GraphQL API**.
 
-Context / blocker: this setup is required to unblock **Issue #80** (Projects v2 automation) — https://github.com/Clay-Agency/novel-task-tracker/issues/80
+GitHub’s built-in Actions token (`GITHUB_TOKEN`) **cannot** mutate **organization Projects v2**, so we use a **GitHub App installation token** minted at runtime.
 
-UI note: GitHub labels move occasionally; the click-paths below match the GitHub web UI as of **2026-02**.
+- Preferred: **GitHub App** (`actions/create-github-app-token@v2`)
+- Fallback: **PAT** (only if you cannot use a GitHub App)
 
-GitHub’s built-in Actions token (`secrets.GITHUB_TOKEN`) **cannot** mutate **organization Projects v2**, so you must configure **one** of:
-
-- **Option A (preferred): GitHub App installation token** (least privilege, per-run tokens, easy rotation)
-- **Option B: PAT fallback** (Personal Access Token)
-
-Primary consumers:
-- `.github/workflows/project-status-sync.yml` (sync Status/Done date/Needs decision)
-- `.github/workflows/projects-v2-auth-smoke.yml` (read-only smoke test)
-
-## Scheduled workflow — Projects v2 auth preflight
-
-Workflow: [`.github/workflows/projects-v2-auth-preflight.yml`](../../.github/workflows/projects-v2-auth-preflight.yml) (added in [PR #101](https://github.com/Clay-Agency/novel-task-tracker/pull/101)).
-
-This workflow runs **daily on a schedule** (and can be run manually) to check whether this repo has a valid **Projects v2 auth** configuration **before** other scheduled automations run.
-
-### What it checks
-
-It passes if **either** of these is configured in GitHub Actions:
-
-1) **GitHub App (preferred)**
-   - `vars.PROJECTS_APP_ID` (preferred)
-     - legacy fallback: `secrets.PROJECTS_APP_ID` (still accepted)
-   - `secrets.PROJECTS_APP_PRIVATE_KEY`
-
-2) **PAT fallback**
-   - `secrets.PROJECT_STATUS_SYNC_TOKEN`
-
-If neither is configured, the preflight **fails intentionally** with an actionable error message and a step summary pointing back to this runbook.
-
-### Where to see the result (job summary)
-
-1. Go to **GitHub → Actions**.
-2. Click the workflow: **Projects v2 auth preflight**.
-3. Open the latest run.
-4. Click the job: **Verify Projects v2 auth vars/secrets are configured**.
-5. Check the run **Summary** — it shows a **Detected** section like:
-   - `PROJECTS_APP_ID present: true/false`
-   - `PROJECTS_APP_PRIVATE_KEY present: true/false`
-   - `PROJECT_STATUS_SYNC_TOKEN present: true/false`
-
-Notes:
-- The workflow **does not print secret values**, only whether they are present.
-- You may also see an error annotation at the top of the run when preflight fails.
-
-### Common failure modes
-
-| Detected | Meaning | Fix |
-|---|---|---|
-| App ID = ✅, App key = ❌, PAT = ❌ | **Only App ID is set** | Add `secrets.PROJECTS_APP_PRIVATE_KEY` (full PEM, with headers + line breaks). |
-| App ID = ❌, App key = ✅, PAT = ❌ | **Only private key is set** | Add `vars.PROJECTS_APP_ID` (preferred) or `secrets.PROJECTS_APP_ID` (legacy). |
-| App ID = ❌, App key = ❌, PAT = ❌ | **Nothing is configured** | Configure either the GitHub App pair or the PAT fallback (see below). |
-| PAT = ✅ (App ID/key may be missing) | PAT fallback is configured | Preflight will pass; consider migrating to the GitHub App approach for least privilege. |
-
-### Temporarily silencing the schedule (use sparingly)
-
-Preferred fix is to **configure Projects v2 auth** (this is usually a one-time setup). If the scheduled failure is too noisy (e.g., during initial bootstrapping), you can temporarily silence it **with caution**:
-
-Option A (no code change):
-- **Actions → Projects v2 auth preflight → Disable workflow** (re-enable when auth is configured).
-
-Option B (code change):
-- Edit [`.github/workflows/projects-v2-auth-preflight.yml`](../../.github/workflows/projects-v2-auth-preflight.yml) and remove (or comment out) the `on: schedule:` trigger, then merge.
-
-Caution:
-- Disabling/removing the schedule reduces early warning for missing auth, and can cause other workflows (like scheduled project sync) to fail later with less context.
+Related issues: #80, #95, #175.
 
 ---
 
-## What the workflows look for (names must match)
+## What to configure (exact names)
 
-Exact names (copy/paste):
+Copy/paste these names (they must match):
 
-| Name | GitHub Actions type | Preferred location | Notes |
+| Name | Type | Preferred location | Notes |
 |---|---|---|---|
-| `PROJECTS_APP_ID` | **Variable** | `vars.PROJECTS_APP_ID` (repo-level or org-level) | Legacy fallback: `secrets.PROJECTS_APP_ID` is still accepted by the preflight. |
-| `PROJECTS_APP_PRIVATE_KEY` | **Secret** | `secrets.PROJECTS_APP_PRIVATE_KEY` | Full PEM contents (keep headers + line breaks). |
-| `PROJECT_STATUS_SYNC_TOKEN` | **Secret** | `secrets.PROJECT_STATUS_SYNC_TOKEN` | PAT fallback (only if you can’t use a GitHub App). |
+| `PROJECTS_APP_ID` | Actions **Variable** | `vars.PROJECTS_APP_ID` | Legacy fallback: `secrets.PROJECTS_APP_ID` is still accepted by preflight. |
+| `PROJECTS_APP_PRIVATE_KEY` | Actions **Secret** | `secrets.PROJECTS_APP_PRIVATE_KEY` | Paste the **full PEM** including headers + line breaks. |
+| `PROJECT_STATUS_SYNC_TOKEN` | Actions **Secret** | `secrets.PROJECT_STATUS_SYNC_TOKEN` | PAT fallback (optional). |
 
-
-### GitHub App (preferred)
-
-- **Actions variable** (preferred) or **secret**:
-  - `PROJECTS_APP_ID`
-- **Actions secret**:
-  - `PROJECTS_APP_PRIVATE_KEY`
-
-The workflow mints an installation token at runtime using `actions/create-github-app-token@v2`.
-
-### PAT fallback
-
-- **Actions secret**:
-  - `PROJECT_STATUS_SYNC_TOKEN`
+Docs:
+- GitHub Apps: https://docs.github.com/en/apps/creating-github-apps
+- Actions secrets: https://docs.github.com/en/actions/security-guides/encrypted-secrets
+- Actions variables: https://docs.github.com/en/actions/learn-github-actions/variables
 
 ---
 
-## Option A (preferred) — GitHub App setup
+## GitHub App setup (recommended)
 
 ### 1) Create an org-owned GitHub App
 
-**Org-side click path (create the App):**
-1. Open the **Clay-Agency** organization on GitHub.
-2. Click **Settings** (this is **org** Settings, not a repo’s Settings).
-3. In the left sidebar, click **Developer settings**.
-4. Click **GitHub Apps**.
-5. Click **New GitHub App**.
+Clay-Agency → **Settings** → **Developer settings** → **GitHub Apps** → **New GitHub App**
 
-Fill in the form:
-- **GitHub App name**: e.g. `Clay Projects Automation` (any unique name)
-- **Homepage URL**: the repo URL is fine (e.g. `https://github.com/Clay-Agency/novel-task-tracker`)
-- **Webhook**: uncheck **Active** (not needed; Actions events trigger the workflows)
-- **Where can this GitHub App be installed?** → **Only on this account**
+Recommended settings:
+- Webhook: **inactive** (not needed)
+- Installable: **Only on this account**
 
-Set **Permissions** (minimum recommended):
+**Minimal required permissions** (keep it least-privilege):
 
-| Scope | Permission | Level | Why needed |
+| Scope | Permission | Level | Why |
 |---|---|---:|---|
-| **Organization** | **Projects** | **Read & write** | Required to query `organization{ projectV2(...) }`, read fields/items, and run `updateProjectV2ItemFieldValue` mutations. |
-| **Repository** | **Issues** | **Read-only** | Needed to read Issue nodes and resolve project items for an issue (`node(id){... on Issue ...}`). |
-| **Repository** | **Pull requests** | **Read-only** | Needed to read PR nodes (merged/closed timestamps) in PR-triggered runs. |
-| **Repository** | **Metadata** | **Read-only** | Required for basic repo identification / token issuance (usually auto-included). |
+| Organization | Projects | Read & write | Query `projectV2` + run mutations (field updates). |
+| Repository | Issues | Read-only | Read Issue nodes referenced by project items (`closedAt`, etc.). |
+| Repository | Pull requests | Read-only | Read PR nodes referenced by project items (`mergedAt`, etc.). |
+| Repository | Metadata | Read-only | Required for GitHub Apps token issuance / repo identification. |
 
-Finally:
-- Scroll down and click **Create GitHub App**.
+No webhook events / subscriptions are required.
 
-Notes:
-- **No webhook / event subscriptions** are required.
-- If you later change permissions: go to the App’s **Installations** → **Configure** and **approve** the updated permissions.
+### 2) Generate credentials
 
-### 2) Generate credentials (App ID + private key)
+On the App page:
+- Copy the **App ID** (numeric)
+- **Generate a private key** → download the `.pem`
 
-1. From the newly created App page, copy the **App ID** (numeric).
-2. Scroll to **Private keys** → click **Generate a private key**.
-3. Download the `.pem` file.
+### 3) Install the App on the org (and the right repos)
 
-### 3) Install the App on the Clay-Agency org
+App page → **Install App** → choose **Clay-Agency**.
 
-**Org-side click path (install the App on the org):**
-1. Go to **Clay-Agency** → **Settings** → **Developer settings** → **GitHub Apps**.
-2. Click your App’s name (e.g. `Clay Projects Automation`).
-3. In the App’s left sidebar, click **Install App**.
-4. On the installation page, choose the **Clay-Agency** organization (if prompted).
-5. Under **Repository access**, choose one:
-   - **Only select repositories** → select **`novel-task-tracker`** (recommended least privilege)
-   - **All repositories** (only if you explicitly want org-wide coverage)
-6. Click **Install** / **Save** (button label varies slightly).
+Repository access:
+- **Only select repositories** → select `novel-task-tracker` (recommended)
 
-If **Clay-Agency Project #1 contains items from multiple repos** and you want the daily **reconcile** run to handle them, the App must also be installed on those repos (or installed on **All repositories**).
+If **Clay-Agency Project #1 includes items from other repos**, the App must also be installed on those repos (or installed on **All repositories**) or some items may be unreadable.
 
-### 4) Add Actions variables/secrets
+### 4) Store the App credentials (Actions variable + secret)
 
-#### CLI quickstart (gh) — repo-level setup (copy/paste)
+Store at **repo level** (simplest) or **org level** (if multiple repos will reuse the App).
 
-This is the fastest/safest way to configure the required **repo-level** Actions variable + secrets.
-
-Prereqs:
-- You have `gh` installed and authenticated (`gh auth status`).
-- Your GitHub account has **repo admin** permissions on `Clay-Agency/novel-task-tracker` (to set repo Actions secrets/variables).
-- You already created the GitHub App + downloaded the private key PEM (see steps above). This auth is needed to unblock **Issue #80** (Projects v2 automation): https://github.com/Clay-Agency/novel-task-tracker/issues/80
-
-```bash
-# Target repo
-REPO="Clay-Agency/novel-task-tracker"
-
-# GitHub App credentials
-APP_ID="<numeric app id>"
-PEM_FILE="</absolute/path/to/private-key.pem>"
-
-# (Optional) PAT fallback token (only if not using the App)
-# PAT_TOKEN="ghp_..."
-
-gh auth status
-
-# 1) Set Actions *variable* (preferred location)
-gh variable set PROJECTS_APP_ID -R "$REPO" --body "$APP_ID"
-
-# 2) Set Actions *secret* (GitHub App private key)
-# Read PEM from file via stdin to preserve line breaks (recommended).
-gh secret set PROJECTS_APP_PRIVATE_KEY -R "$REPO" < "$PEM_FILE"
-
-# 3) PAT fallback secret (only if you can't use the GitHub App)
-# Interactive prompt (recommended; avoids leaking via shell history)
-gh secret set PROJECT_STATUS_SYNC_TOKEN -R "$REPO"
-# Or non-interactive:
-# gh secret set PROJECT_STATUS_SYNC_TOKEN -R "$REPO" --body "$PAT_TOKEN"
-
-# Verify names are present (values are never shown)
-gh variable list -R "$REPO" | grep -E '^PROJECTS_APP_ID\\b'
-gh secret list -R "$REPO" | grep -E '^(PROJECTS_APP_PRIVATE_KEY|PROJECT_STATUS_SYNC_TOKEN)\\b'
-
-# (Optional) Org-level instead of repo-level (reuse across repos)
-# Restrict visibility to selected repos for least privilege.
-# ORG="Clay-Agency"
-# gh variable set PROJECTS_APP_ID --org "$ORG" --visibility selected --repos novel-task-tracker --body "$APP_ID"
-# gh secret set PROJECTS_APP_PRIVATE_KEY --org "$ORG" --visibility selected --repos novel-task-tracker < "$PEM_FILE"
-
-# Security note: never paste the PEM or PAT token into issues/PRs/chat.
-# If you suspect exposure, rotate/revoke immediately (see incident response section below).
-```
-
-Notes:
-- Do **not** put the PEM into shell history via `--body "$(cat ...)"`.
-- Secrets/variables can also be configured at the **org level**, but the commands above are intentionally repo-scoped for least surprise.
-
-You can store these either **repo-level** (simplest) or **org-level** (if reused across repos). Do **not** commit keys to the repo.
-
-#### Repo-level (recommended to start)
-
-**Repo-side click path (set Actions Variables/Secrets):**
-1. Open the repo: **Clay-Agency/novel-task-tracker**.
-2. Click the repo’s **Settings** tab.
-3. In the left sidebar, click **Secrets and variables**.
-4. Click **Actions**.
-
-Now set these in the correct tabs (GitHub separates them):
-
-- **Variables** tab → **New repository variable**
-  - Name: `PROJECTS_APP_ID`
-  - Value: *(your numeric App ID)*
-
-- **Secrets** tab → **New repository secret**
-  - Name: `PROJECTS_APP_PRIVATE_KEY`
-  - Value: *(paste the full PEM contents; see formatting notes below)*
-
-Legacy support (avoid if possible):
-- Instead of a variable, you *may* set `PROJECTS_APP_ID` as a **Secret** named `PROJECTS_APP_ID`. The preflight still accepts this, but prefer the Variable going forward.
-
-#### Org-level (if multiple repos will reuse the same App)
-
-**Org-side click path (set Actions Variables/Secrets at the org level):**
-1. Open **Clay-Agency** on GitHub.
-2. Click **Settings**.
-3. In the left sidebar, click **Secrets and variables**.
-4. Click **Actions**.
-
-Create both entries (in their respective tabs):
-- **Variables** tab → **New organization variable**
-  - Name: `PROJECTS_APP_ID`
-
-- **Secrets** tab → **New organization secret**
-  - Name: `PROJECTS_APP_PRIVATE_KEY`
-
-When prompted, set **Repository access** to **Selected repositories** and include `novel-task-tracker` (and any other repos that the App needs to read Issues/PRs from).
-
-#### PEM formatting (common pitfall)
-
-Paste the **raw PEM** including headers and line breaks:
+PEM formatting (common pitfall):
 
 ```text
 -----BEGIN RSA PRIVATE KEY-----
@@ -261,197 +78,74 @@ Paste the **raw PEM** including headers and line breaks:
 
 Do **not** base64-encode it.
 
-### 5) Validate (smoke test + real workflow)
+#### CLI quickstart (gh) — repo-level (copy/paste)
 
-1. Run the read-only smoke test:
-   - **Actions** → **Projects v2 auth smoke test** → **Run workflow**
-   - Expected: the run succeeds and the **Summary** shows the Project title/ID and a list of fields.
-2. Run the real sync workflow:
-   - **Actions** → **Sync Clay Project status** → **Run workflow**
-   - Expected: no “No Projects v2 auth token available” failure.
+```bash
+REPO="Clay-Agency/novel-task-tracker"
+APP_ID="<numeric app id>"
+PEM_FILE="</absolute/path/to/private-key.pem>"
 
-End-to-end check (optional):
-1. Create an Issue in `novel-task-tracker`.
-2. Add it to **Clay-Agency Project #1**.
-3. Close the Issue.
-4. Confirm the Project item updates (if fields exist):
-   - **Status** → **Done**
-   - **Done date** is set
-   - **Needs decision** is cleared
+gh auth status
 
-### 6) Private key rotation + incident response
+# Variable (preferred)
+gh variable set PROJECTS_APP_ID -R "$REPO" --body "$APP_ID"
 
-#### Routine rotation (planned)
+# Secret (read PEM from stdin to preserve line breaks)
+gh secret set PROJECTS_APP_PRIVATE_KEY -R "$REPO" < "$PEM_FILE"
 
-Goal: rotate without downtime by overlapping keys briefly.
-
-1. App page → **Private keys** → **Generate a private key** (download the new `.pem`).
-2. Update the Actions secret `PROJECTS_APP_PRIVATE_KEY` with the **new** PEM contents (keep formatting/line breaks).
-3. Validate quickly:
-   - Run **Projects v2 auth smoke test** (read-only), then optionally trigger **Sync Clay Project status**.
-4. After validation, delete the **old** private key on the App page.
-
-Notes:
-- GitHub App private keys are long-lived; rotation is the primary mitigation if a key may have been exposed.
-- Keep only the minimum number of active keys (ideally 1) to reduce blast radius.
-
-#### Incident response (suspected key compromise)
-
-If you suspect `PROJECTS_APP_PRIVATE_KEY` leaked (e.g., pasted in a ticket, logged, committed, or shared):
-
-1. **Revoke quickly:** delete the affected private key(s) from the GitHub App page (**Private keys**). Deletion immediately prevents new installation tokens from being minted with that key.
-2. **Rotate:** generate a fresh key and update `PROJECTS_APP_PRIVATE_KEY` to the new PEM, then re-run the smoke test.
-3. **Hunt & contain:**
-   - Search for accidental disclosure (PRs, issues, chat logs, CI logs). Remove/redact where possible.
-   - Review recent **Actions runs** for unexpected workflows, forks, or unusual access patterns.
-   - If the App is installed on multiple repos, confirm the installation scope is still least-privilege (selected repos only).
-4. **Follow-up:**
-   - If the key was ever committed, treat the full git history as compromised; rotate again after remediation and consider repository secret scanning alerts.
-   - Document the timeline and rotation in the incident notes for future audits.
+# Verify presence (values are never shown)
+gh variable list -R "$REPO" | grep -E '^PROJECTS_APP_ID\b'
+gh secret list -R "$REPO" | grep -E '^PROJECTS_APP_PRIVATE_KEY\b'
+```
 
 ---
 
-## Option B — PAT fallback (`PROJECT_STATUS_SYNC_TOKEN`)
+## Validate (expected evidence)
 
-Use this only if you can’t use a GitHub App.
+Workflows:
+- Preflight (checks vars/secrets are present): [`.github/workflows/projects-v2-auth-preflight.yml`](../../.github/workflows/projects-v2-auth-preflight.yml)
+- Smoke test (read-only GraphQL): [`.github/workflows/projects-v2-auth-smoke.yml`](../../.github/workflows/projects-v2-auth-smoke.yml)
+- Real sync: [`.github/workflows/project-status-sync.yml`](../../.github/workflows/project-status-sync.yml)
 
-Why this exists: **Issue #80** (Projects v2 automation) is blocked on configuring Projects v2 auth for **Clay-Agency Project #1**. A PAT can unblock it, but it’s higher-risk than the GitHub App approach.
+### Quick manual validation (UI)
 
-### Requirements (what the workflows need)
+1) **Actions → Projects v2 auth preflight** → latest run should be ✅.
+2) **Actions → Projects v2 auth smoke test** → run manually → should be ✅.
+3) **Actions → Sync Clay Project status** → run manually → should be ✅.
 
-The PAT must be able to:
-
-1) **Read + write** the org Project (Projects v2)
-2) **Read** Issues / PRs referenced by Project items (for closed/merged timestamps, etc.)
-
-If the Project contains items from **multiple repositories**, the PAT must have access to those repos too (either “All repositories” or include each repo explicitly).
-
-### Fine-grained PAT (recommended if using PAT)
-
-#### A) Create the token (click-by-click)
-
-1. GitHub (your user account) → profile photo menu → **Settings**.
-2. Left sidebar → **Developer settings**.
-3. **Personal access tokens** → **Fine-grained tokens**.
-4. Click **Generate new token**.
-
-Fill in the form:
-
-- **Token name**: e.g. `novel-task-tracker Projects v2 sync`.
-- **Expiration**: choose a short period (e.g. 30–90 days). Avoid “No expiration”.
-- **Resource owner**: **`Clay-Agency`** (important — not your personal account).
-
-**Repository access** (choose one):
-- **Only select repositories** → select **`novel-task-tracker`** (minimum), plus any other repos that appear in the Project, or
-- **All repositories** (only if you intentionally want org-wide coverage).
-
-**Permissions** (exact):
-
-| Section | Permission | Level | Why |
-|---|---|---:|---|
-| **Organization permissions** | **Projects** | **Read and write** | Required to query/update `ProjectV2` and run mutations like `updateProjectV2ItemFieldValue`. |
-| **Repository permissions** | **Issues** | **Read-only** | Needed to read Issue nodes referenced by Project items (e.g. `closedAt`). |
-| **Repository permissions** | **Pull requests** | **Read-only** | Needed to read PR nodes referenced by Project items (e.g. `mergedAt`). |
-| **Repository permissions** | **Metadata** | **Read-only** | Required by GitHub for basic repo access with fine-grained tokens. |
-
-Notes:
-- You typically do **not** need `Contents`, `Actions`, or `Administration` permissions for this workflow.
-- If you later change token permissions, prefer creating a **new token** and rotating the secret, instead of editing in place.
-
-5. Scroll down and click **Generate token**.
-6. **Copy the token value immediately** (GitHub will not show it again).
-
-#### B) Store it safely (GitHub Actions secret)
-
-**Never paste this token into issues, PRs, chat, or logs.** Treat it like a password.
-
-Repo-side click path:
-1. Open repo **Clay-Agency/novel-task-tracker**.
-2. Click **Settings**.
-3. Left sidebar → **Secrets and variables** → **Actions**.
-4. **Secrets** tab → **New repository secret**.
-5. Set:
-   - **Name**: `PROJECT_STATUS_SYNC_TOKEN`
-   - **Secret**: *(paste the PAT value)*
-6. Click **Add secret**.
-
-CLI option (recommended; avoids accidental logging / shell history):
+### Optional: run via CLI (gh)
 
 ```bash
 REPO="Clay-Agency/novel-task-tracker"
 
-# Interactive prompt (recommended; token is not echoed)
-gh secret set PROJECT_STATUS_SYNC_TOKEN -R "$REPO"
+gh workflow run "Projects v2 auth preflight" -R "$REPO"
+gh workflow run "Projects v2 auth smoke test" -R "$REPO"
 
-# Verify name exists (value is never shown)
-gh secret list -R "$REPO" | grep -E '^PROJECT_STATUS_SYNC_TOKEN$'
+gh run list -R "$REPO" --limit 5
 ```
-
-Rotation guidance:
-- When the token nears expiry (or if you suspect exposure), generate a **new** fine-grained PAT and **replace** the Actions secret value.
-- Then revoke/delete the old token in GitHub user settings.
-
-### Classic PAT (fallback)
-
-Only use if your org still requires classic tokens.
-
-Typical scopes:
-- `project` (for Projects v2)
-- `repo` (to read Issues/PRs referenced by Project items)
-
-Store it as the Actions secret `PROJECT_STATUS_SYNC_TOKEN` (same name).
-
-### Common failure modes (PAT)
-
-| Symptom / error | Most common cause | Fix |
-|---|---|---|
-| Preflight fails: `PROJECT_STATUS_SYNC_TOKEN present: false` | Secret not set or wrong name | Set Actions secret **exactly** named `PROJECT_STATUS_SYNC_TOKEN`. |
-| `Bad credentials` / 401 | Token expired/revoked or copied incorrectly | Generate a new token and update the Actions secret. |
-| GraphQL: `Resource not accessible by personal access token` | Missing **Org → Projects: Read and write** | Create a new token with **Projects: Read and write**. |
-| GraphQL: project not found / can’t resolve ProjectV2 | Wrong org login/number, or token can’t access org project | Confirm workflow env `ORG_LOGIN=Clay-Agency` + correct `PROJECT_NUMBER`, and **Resource owner = Clay-Agency**. |
-| Some Project items never update | Token lacks repo access for the item’s repo | Add those repos to token access (or select “All repositories”). |
-| Org requires SAML SSO and token isn’t authorized | Token not SSO-authorized | Authorize the token for Clay-Agency in GitHub settings. |
-
-### Validation checklist (PAT)
-
-After setting `PROJECT_STATUS_SYNC_TOKEN`:
-
-1) **Run the read-only auth smoke test**
-- **Actions** → **Projects v2 auth smoke test** → **Run workflow**
-- Expected: succeeds and the **Summary** shows Project info + fields.
-
-2) **Run the real sync workflow**
-- **Actions** → **Sync Clay Project status** → **Run workflow**
-- Expected: succeeds and updates Project #1 items as applicable.
-
-3) (Optional) Confirm the daily preflight is green
-- **Actions** → **Projects v2 auth preflight** → latest run → should pass.
 
 ---
 
-## Troubleshooting
+## Common failures + fixes
 
-### “No Projects v2 auth token available”
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| Preflight fails: missing `PROJECTS_APP_ID` / `PROJECTS_APP_PRIVATE_KEY` | Variable/secret not set, or wrong name | Set `vars.PROJECTS_APP_ID` and `secrets.PROJECTS_APP_PRIVATE_KEY` exactly. |
+| `actions/create-github-app-token` fails | App not installed on org/repo, or permissions not approved after changes | Install App on Clay-Agency + `novel-task-tracker`; re-approve permissions in installation settings. |
+| GraphQL: `Resource not accessible by integration` | Missing **Org → Projects: Read & write** | Update App permissions, then re-approve installation permissions. |
+| Project not found / can’t resolve `projectV2` | Wrong org login/project number, or token can’t access org project | Confirm workflow env (`ORG_LOGIN`, `PROJECT_NUMBER`) and ensure App is installed on the org. |
+| Some project items never update | Project includes items from repos not covered by installation | Install App on those repos or broaden installation scope. |
+| PEM-related errors | PEM pasted without headers/line breaks | Re-set `PROJECTS_APP_PRIVATE_KEY` with the raw PEM text. |
 
-- Missing one of:
-  - `vars.PROJECTS_APP_ID` + `secrets.PROJECTS_APP_PRIVATE_KEY`, or
-  - `secrets.PROJECT_STATUS_SYNC_TOKEN`
+---
 
-### `actions/create-github-app-token` fails
+## PAT fallback (only if GitHub App is not possible)
 
-Common causes:
-- App is not installed on **Clay-Agency**, or not installed on `novel-task-tracker`.
-- Private key pasted incorrectly (missing header/footer or line breaks).
-- App permissions were changed but the installation wasn’t re-approved.
+Set:
+- `secrets.PROJECT_STATUS_SYNC_TOKEN`
 
-### GraphQL: “Resource not accessible by integration”
+Minimum access required:
+- Organization **Projects: Read & write**
+- Repo read access for any repos whose issues/PRs appear in the Project
 
-Usually indicates:
-- Missing **Organization → Projects: Read & write**, or
-- The App installation does not include the repo whose Issue/PR is being read.
-
-### Project not found
-
-Error like: `Could not find org projectV2 Clay-Agency#1`.
-- Verify the workflow `ORG_LOGIN` and `PROJECT_NUMBER` values.
-- Verify your token can read org Projects v2.
+After setting the secret, run the same **smoke test** + **sync** workflows above.
