@@ -231,3 +231,5 @@ It also includes quick links for:
 - **Report a bug**: GitHub bug-report template
 - **QA docs**: `docs/qa/` folder
 - **Export JSON**: jumps to the in-app export/import actions
+
+<!-- repro issue191 2026-03-06T07:55:13Z -->
