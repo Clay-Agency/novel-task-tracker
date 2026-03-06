@@ -1,7 +1,10 @@
 'use strict';
 
+const SCHEMA_HELP_DOC = 'docs/ops/projects-v2-auth.md';
+const SCHEMA_HELP_ANCHOR = 'fieldoption-mismatch-warnings';
+
 function schemaHelp() {
-  return 'See docs/ops/projects-v2-auth.md#fieldoption-mismatch-warnings';
+  return `See ${SCHEMA_HELP_DOC}#${SCHEMA_HELP_ANCHOR}`;
 }
 
 function normalize(s) {
@@ -400,6 +403,9 @@ async function run({ github, context, core, env }) {
 }
 
 module.exports = {
+  SCHEMA_HELP_DOC,
+  SCHEMA_HELP_ANCHOR,
+  schemaHelp,
   normalize,
   yyyyMmDd,
   mapProjectFields,
