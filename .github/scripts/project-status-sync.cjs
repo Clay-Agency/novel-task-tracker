@@ -1,5 +1,9 @@
 'use strict';
 
+function schemaHelp() {
+  return 'See docs/ops/projects-v2-auth.md#fieldoption-mismatch-warnings';
+}
+
 function normalize(s) {
   return String(s || '').trim().toLowerCase();
 }
@@ -192,12 +196,15 @@ async function setNeedsDecisionFalse({ graphql, core, meta, projectId, itemId })
     if (opt?.id) {
       await setSingleSelect({ graphql, projectId, itemId, fieldId: f.id, optionId: opt.id });
     } else {
-      core.warning('Needs decision is SINGLE_SELECT but no obvious false option found; skipping clear.');
+      const names = options.map((o) => o?.name).filter(Boolean);
+      core.warning(
+        `Needs decision is SINGLE_SELECT but no obvious false option found; skipping clear. Options=${JSON.stringify(names)}. ${schemaHelp()}`
+      );
     }
     return;
   }
 
-  core.warning(`Needs decision field has unsupported dataType=${f.dataType}; skipping clear.`);
+  core.warning(`Needs decision field has unsupported dataType=${f.dataType}; skipping clear. ${schemaHelp()}`);
 }
 
 async function syncOneItem({ graphql, core, meta, projectId, itemId, doneDate }) {
@@ -216,7 +223,18 @@ async function syncOneItem({ graphql, core, meta, projectId, itemId, doneDate })
       })
     );
   } else {
-    core.warning('Status field or Done option not found; skipping Status update.');
+    if (!meta.statusField?.id) {
+      core.warning(`Project schema drift: missing field "Status" (SINGLE_SELECT with option "Done"). ${schemaHelp()}`);
+    } else if (meta.statusField?.dataType && meta.statusField.dataType !== 'SINGLE_SELECT') {
+      core.warning(
+        `Project schema drift: field "Status" has dataType=${meta.statusField.dataType}; expected SINGLE_SELECT. ${schemaHelp()}`
+      );
+    } else {
+      const names = (meta.statusField?.options || []).map((o) => o?.name).filter(Boolean);
+      core.warning(
+        `Project schema drift: Status field missing option "Done"; skipping Status update. Options=${JSON.stringify(names)}. ${schemaHelp()}`
+      );
+    }
   }
 
   if (meta.doneDateField?.id) {
@@ -225,7 +243,9 @@ async function syncOneItem({ graphql, core, meta, projectId, itemId, doneDate })
       mutations.push(setDate({ graphql, projectId, itemId, fieldId: meta.doneDateField.id, date }));
     }
   } else {
-    core.warning('Done date field not found; skipping Done date update.');
+    core.warning(
+      `Project schema drift: Done date field not found; skipping Done date update. Expected DATE field named "Done date" (also accepts "Done_date" or "Done"). ${schemaHelp()}`
+    );
   }
 
   // Clear Needs decision
