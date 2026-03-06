@@ -137,6 +137,67 @@ async function addLabelsToIssue(owner: string, repo: string, issueNumber: number
   });
 }
 
+async function addCommentToIssue(owner: string, repo: string, issueNumber: number, body: string): Promise<void> {
+  await ghFetch<unknown>(`/repos/${owner}/${repo}/issues/${issueNumber}/comments`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ body }),
+  });
+}
+
+async function closeIssue(owner: string, repo: string, issueNumber: number): Promise<void> {
+  await ghFetch<unknown>(`/repos/${owner}/${repo}/issues/${issueNumber}`, {
+    method: 'PATCH',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ state: 'closed' }),
+  });
+}
+
+async function closeSupersededSnapshotIssues(params: {
+  owner: string;
+  repo: string;
+  repoFull: string;
+  canonicalIssueNumber: number;
+  dryRun: boolean;
+}): Promise<number> {
+  const { owner, repo, repoFull, canonicalIssueNumber, dryRun } = params;
+
+  const query = `repo:${repoFull} is:issue is:open in:title "${SNAPSHOT_TITLE}"`;
+  const hits = await searchAllIssues(query, 2);
+
+  const toClose = hits
+    .filter((it) => it.number !== canonicalIssueNumber)
+    .sort((a, b) => a.number - b.number);
+
+  if (toClose.length === 0) return 0;
+
+  const marker = 'needs-decision-snapshot: do-not-edit';
+  let closed = 0;
+
+  for (const it of toClose) {
+    const issue = await getIssue(owner, repo, it.number);
+
+    // Safety: only close the automated snapshot issues we own.
+    if (issue.title !== SNAPSHOT_TITLE) continue;
+    if (!((issue.body || '').includes(marker))) continue;
+
+    const comment = `Superseded by #${canonicalIssueNumber}. Closing to keep a single canonical snapshot issue.`;
+
+    if (dryRun) {
+      console.log(`[dry-run] Would close superseded snapshot issue #${issue.number} (superseded by #${canonicalIssueNumber}).`);
+      closed += 1;
+      continue;
+    }
+
+    await addCommentToIssue(owner, repo, issue.number, comment);
+    await closeIssue(owner, repo, issue.number);
+    console.log(`Closed superseded snapshot issue #${issue.number}.`);
+    closed += 1;
+  }
+
+  return closed;
+}
+
 async function findOrCreateSnapshotIssueNumber(owner: string, repo: string, repoFull: string): Promise<number> {
   const envIssue = process.env.SNAPSHOT_ISSUE_NUMBER || process.env.NEEDS_DECISION_SNAPSHOT_ISSUE_NUMBER;
   if (envIssue) {
@@ -188,12 +249,31 @@ export async function main(): Promise<void> {
   if (dryRun) {
     console.log(`[dry-run] Would update issue #${issueNumber} with ${prs.length} PR(s) and ${issues.length} issue(s).`);
     console.log(body.slice(0, 2000));
+
+    await closeSupersededSnapshotIssues({
+      owner,
+      repo,
+      repoFull,
+      canonicalIssueNumber: issueNumber,
+      dryRun: true,
+    });
+
     return;
   }
 
   const updated = await updateIssue({ owner, repo, issueNumber, body, reopenIfClosed: true });
   await addLabelsToIssue(owner, repo, issueNumber, [SNAPSHOT_ISSUE_LABEL]);
+
+  const closed = await closeSupersededSnapshotIssues({
+    owner,
+    repo,
+    repoFull,
+    canonicalIssueNumber: issueNumber,
+    dryRun: false,
+  });
+
   console.log(`Updated snapshot issue: ${updated.html_url}`);
+  if (closed > 0) console.log(`Closed ${closed} superseded snapshot issue(s).`);
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {

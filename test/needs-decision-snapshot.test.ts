@@ -170,4 +170,100 @@ describe('needs-decision snapshot script', () => {
     const createCalls = calls.filter((c) => c.url.endsWith('/repos/Clay-Agency/novel-task-tracker/issues') && (c.init?.method || 'GET').toUpperCase() === 'POST');
     expect(createCalls.length).toBe(0);
   });
+
+  it('closes older open snapshot issues so only the canonical snapshot remains open', async () => {
+    const calls: Array<{ url: string; init?: RequestInit }> = [];
+
+    globalThis.fetch = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+      const u = new URL(String(url));
+      const path = u.pathname;
+      const method = (init?.method || 'GET').toUpperCase();
+      calls.push({ url: u.toString(), init });
+
+      if (path === '/search/issues' && method === 'GET') {
+        const q = u.searchParams.get('q') || '';
+        // First query: open items labeled needs-decision
+        if (q.includes('label:"needs-decision"')) {
+          return okJson({ total_count: 0, incomplete_results: false, items: [] });
+        }
+        // Snapshot query: returns canonical + one duplicate
+        if (q.includes('in:title') && q.includes('Needs-decision snapshot (automated)')) {
+          return okJson({
+            total_count: 2,
+            incomplete_results: false,
+            items: [
+              { number: 50, title: 'Needs-decision snapshot (automated)', html_url: 'https://github.com/Clay-Agency/novel-task-tracker/issues/50' },
+              { number: 60, title: 'Needs-decision snapshot (automated)', html_url: 'https://github.com/Clay-Agency/novel-task-tracker/issues/60' },
+            ],
+          });
+        }
+        throw new Error(`Unexpected search query: ${q}`);
+      }
+
+      if (path === '/repos/Clay-Agency/novel-task-tracker/issues/50' && method === 'GET') {
+        return okJson({
+          number: 50,
+          title: 'Needs-decision snapshot (automated)',
+          state: 'open',
+          html_url: 'https://github.com/Clay-Agency/novel-task-tracker/issues/50',
+          body: '<!-- needs-decision-snapshot: do-not-edit -->\nold',
+        });
+      }
+
+      if (path === '/repos/Clay-Agency/novel-task-tracker/issues/50' && method === 'PATCH') {
+        return okJson({
+          number: 50,
+          title: 'Needs-decision snapshot (automated)',
+          state: 'open',
+          html_url: 'https://github.com/Clay-Agency/novel-task-tracker/issues/50',
+          body: 'updated',
+        });
+      }
+
+      if (path === '/repos/Clay-Agency/novel-task-tracker/issues/50/labels' && method === 'POST') {
+        const body = JSON.parse(String(init?.body || '{}'));
+        expect(body.labels).toEqual(['automation']);
+        return okJson([{ name: 'automation' }]);
+      }
+
+      if (path === '/repos/Clay-Agency/novel-task-tracker/issues/60' && method === 'GET') {
+        return okJson({
+          number: 60,
+          title: 'Needs-decision snapshot (automated)',
+          state: 'open',
+          html_url: 'https://github.com/Clay-Agency/novel-task-tracker/issues/60',
+          body: '<!-- needs-decision-snapshot: do-not-edit -->\ndupe',
+        });
+      }
+
+      if (path === '/repos/Clay-Agency/novel-task-tracker/issues/60/comments' && method === 'POST') {
+        const body = JSON.parse(String(init?.body || '{}'));
+        expect(String(body.body)).toContain('Superseded by #50');
+        return okJson({ id: 1 });
+      }
+
+      if (path === '/repos/Clay-Agency/novel-task-tracker/issues/60' && method === 'PATCH') {
+        const body = JSON.parse(String(init?.body || '{}'));
+        expect(body.state).toBe('closed');
+        return okJson({
+          number: 60,
+          title: 'Needs-decision snapshot (automated)',
+          state: 'closed',
+          html_url: 'https://github.com/Clay-Agency/novel-task-tracker/issues/60',
+          body: 'x',
+        });
+      }
+
+      throw new Error(`Unexpected fetch: ${method} ${path}`);
+    }) as unknown as typeof fetch;
+
+    await main();
+
+    const closedCalls = calls.filter((c) => c.url.includes('/issues/60') && (c.init?.method || 'GET').toUpperCase() === 'PATCH');
+    expect(closedCalls.length).toBe(1);
+
+    const commentCalls = calls.filter((c) => c.url.includes('/issues/60/comments'));
+    expect(commentCalls.length).toBe(1);
+  });
+
 });
