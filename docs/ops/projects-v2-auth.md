@@ -11,6 +11,9 @@ GitHub’s built-in Actions token (`secrets.GITHUB_TOKEN`) **cannot** mutate **o
 - **Option A (preferred): GitHub App installation token** (least privilege, easy to rotate)
 - **Option B: PAT fallback** (Personal Access Token)
 
+> **Status-only fallback:** if you only need Project items to move to **Status = Done** on issue close / PR merge (no Done date / Needs decision updates), you can enable GitHub Projects built-in workflows instead of configuring App/PAT.
+> See: [Status-only fallback](./projects-v2-auth-runbook.md#status-only-fallback-no-apppat).
+
 Primary consumer:
 - [Project status sync workflow](./project-status-sync.md) (`.github/workflows/project-status-sync.yml`)
 

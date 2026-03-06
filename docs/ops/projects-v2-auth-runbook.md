@@ -7,7 +7,40 @@ GitHub’s built-in Actions token (`GITHUB_TOKEN`) **cannot** mutate **organizat
 - Preferred: **GitHub App** (`actions/create-github-app-token@v2`)
 - Fallback: **PAT** (only if you cannot use a GitHub App)
 
+Related (status-only): GitHub Projects built-in workflows can set **Status=Done** on close/merge **without any App/PAT** (see **Status-only fallback** below).
+
 Related issues: #80, #95, #175.
+
+---
+
+## Status-only fallback (no App/PAT)
+
+If Projects v2 auth (#80) is **not configured**, our repo automation **cannot** update custom fields (ex: **Done date**, **Needs decision**).
+
+However, GitHub Projects has **built-in Project workflows** that can still set **Status = Done** when an Issue is closed or a PR is merged — with **no token**.
+
+### Enable in the Project UI
+
+1. Open **Clay-Agency Project #1**.
+2. Click **… (More)** → **Workflows**.
+3. Enable the default workflows for:
+   - **Item closed** → set **Status** to **Done**
+   - **Pull request merged** (or **Pull request closed**, depending on your UI) → set **Status** to **Done**
+
+If the workflow asks for a field/option:
+- Field: `Status`
+- Option: `Done`
+
+### What this does / does not do
+
+✅ Works without App/PAT:
+- Updates the Project item’s **Status** to **Done** on close/merge.
+
+❌ Limitations (why #80 still matters):
+- Cannot set **Done date**
+- Cannot clear **Needs decision**
+
+Recommended usage: treat this as a **temporary stopgap** until #80 (GitHub App auth) is set up.
 
 ---
 
