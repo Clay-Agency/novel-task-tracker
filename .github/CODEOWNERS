@@ -1,0 +1,13 @@
+# CODEOWNERS
+#
+# Keep ownership rules narrow to avoid blocking contributions.
+# These paths are high-risk operational surfaces (CI/CD + ops runbooks)
+# and should be reviewed by maintainers.
+
+.github/workflows/ @seyong92 @sey-agent
+
+docs/ops/ @seyong92 @sey-agent
+
+# Optional: repo automation scripts that affect CI/ops behavior.
+.github/scripts/ @seyong92 @sey-agent
+.github/scripts-dist/ @seyong92 @sey-agent
