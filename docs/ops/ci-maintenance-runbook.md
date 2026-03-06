@@ -91,3 +91,21 @@ To keep pilot operations low-noise and predictable, use a single **weekly CI tri
 1. **Single fixed owner** (lowest coordination, higher bus-factor risk)
 2. **Weekly rotating owner (current default)** (balanced load, still low overhead)
 3. **Formal on-call window** (strong coverage, higher process/noise cost)
+
+## Known GitHub Actions flakes (workarounds)
+
+### 1) PR / `gh pr checks` briefly shows “no checks reported”
+Occasionally right after opening a PR or pushing a commit, GitHub’s Checks UI/API can lag even though workflow runs have started.
+
+Workarounds:
+- Wait ~15–60 seconds and retry `gh pr checks <PR>`.
+- Confirm the runs exist via:
+  - `gh run list --repo Clay-Agency/novel-task-tracker --branch <branch> --event pull_request`
+- If runs exist but checks still don’t show, treat it as UI/API propagation delay rather than missing triggers.
+
+### 2) `gh workflow run …` returns HTTP 500
+This is usually a transient GitHub Actions service/API error (server-side). Recommended operator behavior:
+- Retry with exponential backoff (e.g., 1s, 2s, 4s, 8s; cap ~30s).
+- If it persists, trigger from the GitHub Actions web UI.
+- When reporting, capture an API request id for GitHub Support/debugging:
+  - `GH_DEBUG=api gh workflow run "<workflow>" --ref <branch>`
