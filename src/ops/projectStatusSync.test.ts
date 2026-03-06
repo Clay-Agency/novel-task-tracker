@@ -221,7 +221,7 @@ describe('project-status-sync', () => {
     expect(core.warning).toHaveBeenCalledTimes(1);
     const msg = String(core.warning.mock.calls[0][0]);
     expect(msg).toContain('Status field missing option "Done"');
-    expect(msg).toContain('docs/ops/projects-v2-auth.md#field-option-mismatch-warnings');
+    expect(msg).toContain('docs/ops/projects-v2-auth.md#fieldoption-mismatch-warnings');
     expect(msg).toContain('Completed');
   });
 
@@ -251,7 +251,7 @@ describe('project-status-sync', () => {
     expect(core.warning).toHaveBeenCalledTimes(1);
     const msg = String(core.warning.mock.calls[0][0]);
     expect(msg).toContain('missing field "Status"');
-    expect(msg).toContain('docs/ops/projects-v2-auth.md#field-option-mismatch-warnings');
+    expect(msg).toContain('docs/ops/projects-v2-auth.md#fieldoption-mismatch-warnings');
   });
 
   it('warns with a runbook link when Done date field is missing', async () => {
@@ -288,7 +288,7 @@ describe('project-status-sync', () => {
     expect(core.warning).toHaveBeenCalledTimes(1);
     const msg = String(core.warning.mock.calls[0][0]);
     expect(msg).toContain('Done date field not found');
-    expect(msg).toContain('docs/ops/projects-v2-auth.md#field-option-mismatch-warnings');
+    expect(msg).toContain('docs/ops/projects-v2-auth.md#fieldoption-mismatch-warnings');
   });
 
   it('warns (with options + runbook link) when Needs decision is SINGLE_SELECT but has no obvious false option', async () => {
@@ -334,7 +334,7 @@ describe('project-status-sync', () => {
     expect(core.warning).toHaveBeenCalledTimes(1);
     const msg = String(core.warning.mock.calls[0][0]);
     expect(msg).toContain('Needs decision is SINGLE_SELECT but no obvious false option found');
-    expect(msg).toContain('docs/ops/projects-v2-auth.md#field-option-mismatch-warnings');
+    expect(msg).toContain('docs/ops/projects-v2-auth.md#fieldoption-mismatch-warnings');
     expect(msg).toContain('Maybe');
   });
 

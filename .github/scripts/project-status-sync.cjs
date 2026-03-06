@@ -1,7 +1,7 @@
 'use strict';
 
 function schemaHelp() {
-  return 'See docs/ops/projects-v2-auth.md#field-option-mismatch-warnings';
+  return 'See docs/ops/projects-v2-auth.md#fieldoption-mismatch-warnings';
 }
 
 function normalize(s) {
