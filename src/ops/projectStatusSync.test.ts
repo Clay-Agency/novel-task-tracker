@@ -139,4 +139,203 @@ describe('project-status-sync', () => {
 
     expect(calls.some((c) => c.vars.fieldId === 'F_NEEDS' && c.vars.optionId === 'OPT_NO')).toBe(true);
   });
+
+  it('maps expected fields even when the project has additional unexpected fields', async () => {
+    const graphql = vi.fn(async () => {
+      return {
+        organization: {
+          projectV2: {
+            id: 'P1',
+            title: 'Clay Project',
+            fields: {
+              nodes: [
+                // unrelated fields (should be ignored)
+                { id: 'F_IGNORED', name: 'Epic', dataType: 'TEXT' },
+                {
+                  id: 'F_STATUS',
+                  name: 'Status',
+                  dataType: 'SINGLE_SELECT',
+                  options: [
+                    { id: 'OPT_TODO', name: 'Todo' },
+                    { id: 'OPT_DONE', name: 'Done' },
+                  ],
+                },
+                { id: 'F_DONE_DATE', name: 'Done date', dataType: 'DATE' },
+                { id: 'F_NEEDS', name: 'Needs_decision', dataType: 'BOOLEAN' },
+                // more unrelated fields
+                { id: 'F_IGNORED_2', name: 'Random', dataType: 'NUMBER' },
+              ],
+            },
+          },
+        },
+      };
+    });
+
+    const meta = await getProjectMetadata({ graphql, orgLogin: 'Clay-Agency', projectNumber: 1 });
+
+    expect(meta.statusField.id).toBe('F_STATUS');
+    expect(meta.statusDoneOptionId).toBe('OPT_DONE');
+    expect(meta.doneDateField.id).toBe('F_DONE_DATE');
+    expect(meta.needsDecisionField.id).toBe('F_NEEDS');
+  });
+
+  it('warns with a runbook link when Status is present but Done option is missing/renamed', async () => {
+    type Vars = Record<string, unknown>;
+
+    const calls: Array<{ vars: Vars }> = [];
+    const graphql = vi.fn(async (_q: string, vars: Vars) => {
+      calls.push({ vars });
+      return {};
+    });
+
+    const core = { warning: vi.fn() };
+
+    const meta = {
+      statusField: {
+        id: 'F_STATUS',
+        name: 'Status',
+        dataType: 'SINGLE_SELECT',
+        options: [
+          { id: 'OPT_TODO', name: 'Todo' },
+          { id: 'OPT_COMPLETED', name: 'Completed' },
+        ],
+      },
+      statusDoneOptionId: null,
+      doneDateField: { id: 'F_DONE_DATE' },
+      needsDecisionField: null,
+    };
+
+    await syncOneItem({
+      graphql,
+      core,
+      meta,
+      projectId: 'PROJ',
+      itemId: 'ITEM',
+      doneDate: '2026-02-23',
+    });
+
+    // Done date update only (Status skipped; needs decision missing)
+    expect(graphql).toHaveBeenCalledTimes(1);
+    expect(calls.some((c) => c.vars.fieldId === 'F_DONE_DATE')).toBe(true);
+
+    expect(core.warning).toHaveBeenCalledTimes(1);
+    const msg = String(core.warning.mock.calls[0][0]);
+    expect(msg).toContain('Status field missing option "Done"');
+    expect(msg).toContain('docs/ops/projects-v2-auth.md#field-option-mismatch-warnings');
+    expect(msg).toContain('Completed');
+  });
+
+  it('warns with a runbook link when Status field is missing', async () => {
+
+    const graphql = vi.fn(async () => ({}));
+    const core = { warning: vi.fn() };
+
+    const meta = {
+      statusField: null,
+      statusDoneOptionId: null,
+      doneDateField: { id: 'F_DONE_DATE' },
+      needsDecisionField: null,
+    };
+
+    await syncOneItem({
+      graphql,
+      core,
+      meta,
+      projectId: 'PROJ',
+      itemId: 'ITEM',
+      doneDate: '2026-02-23',
+    });
+
+    expect(graphql).toHaveBeenCalledTimes(1);
+
+    expect(core.warning).toHaveBeenCalledTimes(1);
+    const msg = String(core.warning.mock.calls[0][0]);
+    expect(msg).toContain('missing field "Status"');
+    expect(msg).toContain('docs/ops/projects-v2-auth.md#field-option-mismatch-warnings');
+  });
+
+  it('warns with a runbook link when Done date field is missing', async () => {
+    type Vars = Record<string, unknown>;
+
+    const calls: Array<{ vars: Vars }> = [];
+    const graphql = vi.fn(async (_q: string, vars: Vars) => {
+      calls.push({ vars });
+      return {};
+    });
+
+    const core = { warning: vi.fn() };
+
+    const meta = {
+      statusField: { id: 'F_STATUS' },
+      statusDoneOptionId: 'OPT_DONE',
+      doneDateField: null,
+      needsDecisionField: null,
+    };
+
+    await syncOneItem({
+      graphql,
+      core,
+      meta,
+      projectId: 'PROJ',
+      itemId: 'ITEM',
+      doneDate: '2026-02-23',
+    });
+
+    // Status update only (Done date skipped)
+    expect(graphql).toHaveBeenCalledTimes(1);
+    expect(calls.some((c) => c.vars.fieldId === 'F_STATUS' && c.vars.optionId === 'OPT_DONE')).toBe(true);
+
+    expect(core.warning).toHaveBeenCalledTimes(1);
+    const msg = String(core.warning.mock.calls[0][0]);
+    expect(msg).toContain('Done date field not found');
+    expect(msg).toContain('docs/ops/projects-v2-auth.md#field-option-mismatch-warnings');
+  });
+
+  it('warns (with options + runbook link) when Needs decision is SINGLE_SELECT but has no obvious false option', async () => {
+    type Vars = Record<string, unknown>;
+
+    const calls: Array<{ vars: Vars }> = [];
+    const graphql = vi.fn(async (_q: string, vars: Vars) => {
+      calls.push({ vars });
+      return {};
+    });
+
+    const core = { warning: vi.fn() };
+
+    const meta = {
+      statusField: { id: 'F_STATUS' },
+      statusDoneOptionId: 'OPT_DONE',
+      doneDateField: { id: 'F_DONE_DATE' },
+      needsDecisionField: {
+        id: 'F_NEEDS',
+        name: 'Needs decision',
+        dataType: 'SINGLE_SELECT',
+        options: [
+          { id: 'OPT_YES', name: 'Yes' },
+          { id: 'OPT_MAYBE', name: 'Maybe' },
+        ],
+      },
+    };
+
+    await syncOneItem({
+      graphql,
+      core,
+      meta,
+      projectId: 'PROJ',
+      itemId: 'ITEM',
+      doneDate: '2026-02-23',
+    });
+
+    // Status + Done date only (Needs decision clear skipped)
+    expect(graphql).toHaveBeenCalledTimes(2);
+    expect(calls.some((c) => c.vars.fieldId === 'F_STATUS')).toBe(true);
+    expect(calls.some((c) => c.vars.fieldId === 'F_DONE_DATE')).toBe(true);
+
+    expect(core.warning).toHaveBeenCalledTimes(1);
+    const msg = String(core.warning.mock.calls[0][0]);
+    expect(msg).toContain('Needs decision is SINGLE_SELECT but no obvious false option found');
+    expect(msg).toContain('docs/ops/projects-v2-auth.md#field-option-mismatch-warnings');
+    expect(msg).toContain('Maybe');
+  });
+
 });
