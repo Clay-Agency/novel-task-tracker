@@ -1,0 +1,97 @@
+name: Exclude automation items from Project #1
+
+on:
+  issues:
+    types: [opened, labeled]
+  pull_request:
+    types: [opened, labeled]
+  workflow_dispatch:
+    inputs:
+      cleanup_all:
+        description: 'If true, search repo for items labeled automation and remove them from Project #1'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+
+concurrency:
+  group: project-autoadd-exclude-automation
+  cancel-in-progress: false
+
+jobs:
+  exclude:
+    runs-on: ubuntu-latest
+    env:
+      ORG_LOGIN: Clay-Agency
+      PROJECT_NUMBER: '1'
+      AUTOMATION_LABEL: automation
+      # Backstop for eventual consistency / workflow order: Project auto-add may run slightly after issue creation.
+      RETRY_ATTEMPTS: '6'
+      RETRY_DELAY_MS: '10000'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve Projects v2 auth configuration
+        id: auth
+        shell: bash
+        env:
+          PROJECTS_APP_ID: ${{ vars.PROJECTS_APP_ID || secrets.PROJECTS_APP_ID }}
+          PROJECTS_APP_PRIVATE_KEY: ${{ secrets.PROJECTS_APP_PRIVATE_KEY }}
+          PROJECT_STATUS_SYNC_TOKEN: ${{ secrets.PROJECT_STATUS_SYNC_TOKEN }}
+        run: node .github/scripts/resolve-projects-auth.cjs
+
+      - name: Create GitHub App token (preferred)
+        id: app-token
+        if: ${{ steps.auth.outputs.use_app == 'true' }}
+        uses: actions/create-github-app-token@v2
+        continue-on-error: true
+        with:
+          app-id: ${{ steps.auth.outputs.app_id }}
+          private-key: ${{ secrets.PROJECTS_APP_PRIVATE_KEY }}
+          owner: ${{ env.ORG_LOGIN }}
+          repositories: ${{ github.event.repository.name }}
+
+      - name: Select Projects v2 token (App > PAT)
+        id: token
+        shell: bash
+        env:
+          APP_TOKEN: ${{ steps.app-token.outputs.token }}
+          PAT_TOKEN: ${{ secrets.PROJECT_STATUS_SYNC_TOKEN }}
+        run: node .github/scripts/select-projects-token.cjs
+
+      - name: Skip fast (missing Projects v2 auth)
+        if: ${{ steps.token.outputs.token == '' }}
+        shell: bash
+        env:
+          VARS_PROJECTS_APP_ID: ${{ vars.PROJECTS_APP_ID }}
+          SECRETS_PROJECTS_APP_ID: ${{ secrets.PROJECTS_APP_ID }}
+          PROJECTS_APP_PRIVATE_KEY: ${{ secrets.PROJECTS_APP_PRIVATE_KEY }}
+          PROJECT_STATUS_SYNC_TOKEN: ${{ secrets.PROJECT_STATUS_SYNC_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          docs_url="https://github.com/${GITHUB_REPOSITORY}/blob/main/docs/ops/projects-v2-auth-runbook.md"
+
+          append() { printf '%s\n' "$1" >> "$GITHUB_STEP_SUMMARY"; }
+
+          append "# Project auto-add exclusion — skipped (Projects v2 auth missing)"
+          append ""
+          append "Runbook: ${docs_url}"
+
+          echo "::warning title=No Projects v2 auth token available::Skipping Project auto-add exclusion because no Projects v2 auth token is configured. Configure Projects v2 auth: GitHub App (preferred) set vars.PROJECTS_APP_ID + secrets.PROJECTS_APP_PRIVATE_KEY, OR PAT set secrets.PROJECT_STATUS_SYNC_TOKEN. Runbook: ${docs_url}"
+          exit 0
+
+      - name: Remove automation-labeled items from Project #1 (backstop)
+        uses: actions/github-script@v7
+        if: ${{ steps.token.outputs.token != '' }}
+        with:
+          github-token: ${{ steps.token.outputs.token }}
+          script: |
+            const { run } = require('./.github/scripts/project-autoadd-exclude-automation.cjs');
+            await run({ github, context, core, env: process.env });
