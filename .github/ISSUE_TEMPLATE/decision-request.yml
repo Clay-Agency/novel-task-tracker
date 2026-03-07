@@ -1,0 +1,88 @@
+name: Decision request
+description: Request a Clay/human decision with options, recommendation, risks, and evidence.
+title: "[Decision] "
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template when progress is **blocked on a decision** (policy, priority, trade-off, direction).
+
+        **After you create the issue:**
+        1) Add it to **Clay-Agency org Project #1**
+        2) Set project field **Needs decision = True**
+        3) Add key links to the project field **Evidence** (PR/Docs/Actions/etc.)
+
+        Reference: `docs/ops/project-1-field-conventions.md`
+
+  - type: textarea
+    id: decision
+    attributes:
+      label: Decision
+      description: What decision is being requested? Phrase it as a clear question.
+      placeholder: |
+        Example: Should we ship feature X in v1.2, or defer to v1.3?
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Background and constraints. Include what we know and what is blocking progress.
+      placeholder: |
+        Example: We discovered Y during implementation; it affects Z and changes the timeline.
+    validations:
+      required: false
+
+  - type: textarea
+    id: options
+    attributes:
+      label: Options
+      description: List 1–3 realistic options. Include brief pros/cons and cost/time impacts.
+      placeholder: |
+        - Option A: ...
+          - Pros:
+          - Cons:
+          - Cost/ETA:
+        - Option B: ...
+          - Pros:
+          - Cons:
+          - Cost/ETA:
+    validations:
+      required: true
+
+  - type: textarea
+    id: recommendation
+    attributes:
+      label: Recommendation
+      description: Your recommended option + rationale (if you have one).
+      placeholder: |
+        Recommended: Option A
+        Rationale: ...
+    validations:
+      required: false
+
+  - type: textarea
+    id: risks
+    attributes:
+      label: Risks / trade-offs
+      description: Key risks, second-order effects, and what could go wrong.
+      placeholder: |
+        - Risk 1: ... (mitigation: ...)
+        - Risk 2: ...
+    validations:
+      required: false
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence links
+      description: Links that support this decision (issues/PRs/docs/logs/screenshots).
+      placeholder: |
+        - PR: <url>
+        - Docs: <url>
+        - CI/Actions: <url>
+        - Other: <url>
+    validations:
+      required: false
