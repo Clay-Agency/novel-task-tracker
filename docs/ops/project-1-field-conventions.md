@@ -53,3 +53,15 @@ Conventions:
   - (optional) a recommended default
   - links/evidence (can also be mirrored into the project `Evidence` field)
 - Set back to **False** once the decision is made or no longer blocks progress.
+
+## Evidence (text)
+
+Conventions:
+- Use this field as the **living link hub** for the issue/PR. Keep it short (typically 1–5 lines).
+- Prefer durable URLs (PR link, Actions run link, doc/decision record path, screenshot/GIF link).
+- Suggested format (one item per line):
+  - `PR: <url>`
+  - `CI: <url>`
+  - `Decision record: docs/decisions/DR-XXXX-...md`
+  - `QA evidence: <url or docs/qa/...#anchor>`
+- When moving work to **Review** or **Done**, make sure the Evidence field includes the relevant PR/merge reference.
