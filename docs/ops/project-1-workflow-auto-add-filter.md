@@ -5,6 +5,12 @@ Use this when Project #1 is auto-adding “meta”/automation issues (for contex
 ## Goal
 Update the Project #1 **Workflows → Auto-add** filter to exclude issues labeled `automation` by appending `-label:automation`.
 
+## Repo backstop (GitHub Actions)
+This repo includes a small backstop workflow that will **remove any issue/PR labeled `automation` from Project #1** if it gets auto-added anyway:
+- Workflow: `.github/workflows/project-autoadd-exclude-automation.yml`
+
+This is intentionally lightweight and should not replace the **Project Workflows → Auto-add filter**. Keep the filter updated so automation items never enter the project in the first place.
+
 ### Example filter
 Use this exact filter (minimum viable):
 
