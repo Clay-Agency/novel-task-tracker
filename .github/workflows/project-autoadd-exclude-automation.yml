@@ -35,8 +35,8 @@ jobs:
     # Reduce workflow noise: only run for items labeled `automation` (or on manual dispatch).
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'issues' && contains(github.event.issue.labels.*.name, env.AUTOMATION_LABEL)) ||
-      (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, env.AUTOMATION_LABEL))
+      (github.event_name == 'issues' && contains(github.event.issue.labels.*.name, 'automation')) ||
+      (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'automation'))
     runs-on: ubuntu-latest
 
     steps:
