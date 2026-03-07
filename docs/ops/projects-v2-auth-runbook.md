@@ -42,6 +42,31 @@ If the workflow asks for a field/option:
 
 Recommended usage: treat this as a **temporary stopgap** until #80 (GitHub App auth) is set up.
 
+### Reducing Actions noise (if you intentionally stay Status-only)
+
+If you choose this fallback and **do not** configure Projects v2 auth (#80), you may still see GitHub Actions activity:
+
+- **Projects v2 auth preflight** runs on a **daily schedule** and will **fail** with a “missing auth” error.
+- **Sync Clay Project status** runs on **Issue/PR close** and will typically **warn + skip** when no token is available.
+
+Low-risk ways to keep noise low:
+
+1) **Disable the scheduled trigger** (keep manual `workflow_dispatch`)
+   - File: [`.github/workflows/projects-v2-auth-preflight.yml`](../../.github/workflows/projects-v2-auth-preflight.yml)
+   - Remove (or comment out) the `on.schedule` block.
+   - Click-path: **Code** → open the file → **Edit (pencil)** → commit to your default branch.
+
+2) **Disable specific workflows in the repo UI**
+   - Click-path: **Actions** → select a workflow (ex: **Projects v2 auth preflight**) → **…** → **Disable workflow**.
+   - Suggested disables if you only want built-in Project workflows:
+     - **Projects v2 auth preflight**
+     - **Sync Clay Project status**
+
+3) **Ignore the warnings as expected**
+   - The warnings/skips are safe if you’re relying on GitHub Projects built-in workflows for **Status = Done**.
+   - When you’re ready for full automation (Done date / Needs decision), follow #80 and re-enable the workflows.
+
+
 ---
 
 ## What to configure (exact names)
