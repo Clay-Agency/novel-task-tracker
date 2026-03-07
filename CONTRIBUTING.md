@@ -26,6 +26,16 @@ Use the issue templates under `.github/ISSUE_TEMPLATE/`:
 - **QA finding** (`qa-finding.md`): findings mapped to checklist docs in `docs/qa/`
 - **Feature request** (`feature-request.md`): enhancement proposals with problem + success criteria
 
+## Project #1 board fields (Owner agent / Needs decision / Evidence)
+
+When you add an issue/PR to the **Clay-Agency org Project #1** board, keep these fields accurate:
+
+- **Owner agent**: the agent accountable for the next step. Set when work starts; clear if unowned.
+- **Needs decision**: set `True` (and apply label `needs-decision`) only when progress is blocked on an explicit Clay decision. Put the decision question + options in the issue.
+- **Evidence**: paste the key links that justify the current state (PR, CI run, screenshots/GIFs, decision record). Keep it short; one item per line.
+
+Details: [`docs/ops/project-1-field-conventions.md`](./docs/ops/project-1-field-conventions.md)
+
 ## Needs-decision convention
 
 If an issue/PR is blocked on an **explicit decision from Clay**, apply the repo label `needs-decision`.
@@ -46,7 +56,7 @@ For QA findings (and QA-discovered bugs), include a direct link to the relevant 
 ## Ops runbooks (Project #1 automation)
 
 - [Projects v2 auth runbook](./docs/ops/projects-v2-auth-runbook.md): Use when configuring or debugging GitHub Actions auth for workflows that read/update the Clay-Agency org Project #1 (GraphQL `ProjectV2`).
-- [Project #1 field conventions](./docs/ops/project-1-field-conventions.md): Use when triaging work on the Project #1 board or building automation that writes project fields (Status, Priority, Owner agent, Needs decision).
+- [Project #1 field conventions](./docs/ops/project-1-field-conventions.md): Use when triaging work on the Project #1 board or building automation that writes project fields (Status, Priority, Owner agent, Needs decision, Evidence).
 
 ## Markdown link check
 
