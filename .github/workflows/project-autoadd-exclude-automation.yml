@@ -22,16 +22,22 @@ concurrency:
   group: project-autoadd-exclude-automation
   cancel-in-progress: false
 
+env:
+  ORG_LOGIN: Clay-Agency
+  PROJECT_NUMBER: '1'
+  AUTOMATION_LABEL: automation
+  # Backstop for eventual consistency / workflow order: Project auto-add may run slightly after issue creation.
+  RETRY_ATTEMPTS: '6'
+  RETRY_DELAY_MS: '10000'
+
 jobs:
   exclude:
+    # Reduce workflow noise: only run for items labeled `automation` (or on manual dispatch).
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issues' && contains(github.event.issue.labels.*.name, env.AUTOMATION_LABEL)) ||
+      (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, env.AUTOMATION_LABEL))
     runs-on: ubuntu-latest
-    env:
-      ORG_LOGIN: Clay-Agency
-      PROJECT_NUMBER: '1'
-      AUTOMATION_LABEL: automation
-      # Backstop for eventual consistency / workflow order: Project auto-add may run slightly after issue creation.
-      RETRY_ATTEMPTS: '6'
-      RETRY_DELAY_MS: '10000'
 
     steps:
       - name: Checkout
