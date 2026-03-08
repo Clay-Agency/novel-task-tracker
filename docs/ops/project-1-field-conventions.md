@@ -52,6 +52,7 @@ Conventions:
   - 1–3 options
   - (optional) a recommended default
   - links/evidence (can also be mirrored into the project `Evidence` field)
+- For repeatable issue updates/comments, use [`docs/ops/decision-brief-template.md`](./decision-brief-template.md).
 - Set back to **False** once the decision is made or no longer blocks progress.
 
 ## Evidence (text)
