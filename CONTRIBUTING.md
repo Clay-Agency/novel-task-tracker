@@ -42,6 +42,8 @@ If an issue/PR is blocked on an **explicit decision from Clay**, apply the repo 
 
 Optional (if you’re using the Project #1 board): also set the Project field `Needs decision: True`.
 
+When preparing a live decision handoff in an existing issue/PR, use the compact [`docs/ops/decision-brief-template.md`](./docs/ops/decision-brief-template.md) so Clay gets the same structure each time (decision needed, recommendation, options, risks, blocked work, deadline, exact ask, evidence).
+
 Canonical snapshot (updated daily): the single issue titled `Needs-decision snapshot (automated)`
 - Find it: https://github.com/Clay-Agency/novel-task-tracker/issues?q=is%3Aissue+is%3Aopen+%22Needs-decision+snapshot+%28automated%29%22
 - Run manually: https://github.com/Clay-Agency/novel-task-tracker/actions/workflows/needs-decision-snapshot.yml (Actions → "Needs-decision daily snapshot" → Run workflow)

@@ -2,6 +2,8 @@
 
 This page is a lightweight checklist of decisions that block ops/automation work.
 
+Use the standard comment format in [`docs/ops/decision-brief-template.md`](./decision-brief-template.md) when posting or updating a decision brief on one of these issues.
+
 ## Decisions
 
 - [ ] **#80 Projects v2 auth for Project #1 automation** — decide **GitHub App vs PAT** for Actions to update Project fields.
@@ -11,4 +13,4 @@ This page is a lightweight checklist of decisions that block ops/automation work
 
 - [ ] **#126 Priority taxonomy (P0–P3 vs P0–P2)** — decide whether to **add P3** to Project #1 (or collapse P3 into P2).
   - Issue: https://github.com/Clay-Agency/novel-task-tracker/issues/126
-  - Decision memo comment: https://github.com/Clay-Agency/novel-task-tracker/issues/126#issuecomment-3993404482
+  - Example decision brief comment: https://github.com/Clay-Agency/novel-task-tracker/issues/126#issuecomment-4019857596

@@ -16,6 +16,7 @@ Quick filter: [`label:needs-decision`](https://github.com/Clay-Agency/novel-task
 Use the `needs-decision` label when an issue/PR is blocked on an **explicit decision from Clay**.
 
 - Apply/remove guidelines: [`CONTRIBUTING.md#needs-decision-convention`](./CONTRIBUTING.md#needs-decision-convention)
+- Standard decision-brief comment template for active Project #1 items: [`docs/ops/decision-brief-template.md`](./docs/ops/decision-brief-template.md)
 - Canonical daily snapshot issue (automation overwrites the body): search for [`Needs-decision snapshot (automated)`](https://github.com/Clay-Agency/novel-task-tracker/issues?q=is%3Aissue+is%3Aopen+%22Needs-decision+snapshot+%28automated%29%22)
 - Run snapshot manually: [Actions → “Needs-decision daily snapshot”](https://github.com/Clay-Agency/novel-task-tracker/actions/workflows/needs-decision-snapshot.yml) → **Run workflow** (no Projects v2 auth required)
 
