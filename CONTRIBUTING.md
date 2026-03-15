@@ -12,6 +12,11 @@ nvm use
 
 (`.nvmrc` is set to `20`.)
 
+## Install command guidance
+
+- Use `npm ci` on a fresh checkout when you want lockfile-faithful, CI-aligned installs.
+- Use `npm install` only when you intentionally add/update dependencies.
+
 ## Branch + PR flow
 
 1. Branch from `main` with `feat/issue-<number>-<summary>`.
