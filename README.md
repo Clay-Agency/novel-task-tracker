@@ -44,12 +44,17 @@ npm run start
 ```
 
 ## Quality checks
+Use the fast verification commands below for local changes:
+
 ```bash
-npm run lint
-npm run typecheck
-npm run test
+npm run verify:quick
+npm run verify:core
 npm run e2e
 ```
+
+- `verify:quick`: workflows check + lint + typecheck + tests
+- `verify:core`: `verify:quick` plus a production build
+- For docs-only updates, start with `npm run docs:links`.
 
 ## Build
 ```bash
