@@ -4,7 +4,7 @@ Thanks for contributing to **novel-task-tracker**.
 
 ## Local Node version
 
-CI runs on Node.js 20. To align local behavior with CI, use the repo-pinned version:
+CI runs on Node.js 20, and `package.json#engines` declares the supported local toolchain (`node >=20 <21`, `npm >=9`). To align local behavior with CI, use the repo-pinned version:
 
 ```bash
 nvm use
