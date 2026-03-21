@@ -38,7 +38,7 @@ Validate all checklist items on at least the following matrix before pilot sign-
 ## 3) Pre-QA Setup
 
 1. Pull latest `main` and run:
-   - `npm install`
+   - `npm ci`
    - `npm run dev`
 2. Use a fresh profile/incognito window (to avoid stale localStorage noise).
 3. Prepare seed tasks with mixed metadata:
