@@ -8,7 +8,7 @@ Use this guide to choose the smallest local verification command set that matche
 | --- | --- | --- |
 | Docs-only changes in `README.md` or `docs/` | `npm run docs:links` | Verifies local Markdown links still resolve after doc edits. |
 | Workflow YAML changes in `.github/workflows/` | `npm run check:workflows` | Parses workflow files so YAML or syntax mistakes fail locally first. |
-| Standard code changes | `npm run verify:quick` | Runs the default pre-PR baseline: workflow parsing, lint, typecheck, and unit/integration tests. |
+| Most non-doc code changes (recommended default) | `npm run verify:quick` | Fast code-only gate for day-to-day iteration: workflow parsing, lint, typecheck, and unit/integration tests before a longer `verify:core` run. |
 | Code changes that also need production build confidence | `npm run verify:core` | Runs `verify:quick` plus `npm run build`. This is the main required local merge gate. |
 | UI flows, browser behavior, or smoke-path changes | `npm run e2e` | Runs Playwright smoke coverage in addition to the normal verification path. |
 | Need one specific signal while iterating | `npm run docs:links`, `npm run lint`, `npm run typecheck`, `npm test`, or `npm run build` | Useful for fast feedback before running one of the bundled verification commands above. |
@@ -33,7 +33,7 @@ This keeps docs validation fast without forcing the full code verification path 
 
 ### 2) Standard code changes
 
-For normal application or script changes, run:
+For normal application or script changes, start with:
 
 ```bash
 npm run verify:quick
@@ -45,7 +45,7 @@ npm run verify:quick
 npm run check:workflows && npm run lint && npm run typecheck && npm test
 ```
 
-Use this as the default baseline while iterating on most implementation work.
+Use this as the recommended default for most non-doc changes while iterating. It gives you the fast code-only gate before spending extra time on `npm run verify:core`.
 
 ### 3) Deeper local validation before PR
 
