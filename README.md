@@ -25,10 +25,26 @@ Use the `needs-decision` label when an issue/PR is blocked on an **explicit deci
 Checklist: [`docs/ops/open-decisions.md`](./docs/ops/open-decisions.md)
 
 ## Prerequisites
-- Node.js 18+
+- Node.js 20+
 - npm 9+
 
+To match CI and the repo's pinned runtime, run:
+```bash
+nvm use
+```
+
 ## Setup
+For the cleanest CI-aligned install on a fresh checkout, prefer:
+```bash
+npm run setup:clean
+```
+
+That script wraps:
+```bash
+npm ci
+```
+
+If you intentionally changed dependencies, use:
 ```bash
 npm install
 ```
