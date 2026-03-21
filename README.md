@@ -44,12 +44,15 @@ npm run start
 ```
 
 ## Quality checks
+Choose the smallest local path for your change in [`docs/testing/local-verification.md`](./docs/testing/local-verification.md).
+
 ```bash
-npm run lint
-npm run typecheck
-npm run test
+npm run verify:quick
+npm run verify:core
 npm run e2e
 ```
+
+For docs-only updates, start with `npm run docs:links`.
 
 ## Build
 ```bash
@@ -88,6 +91,7 @@ A daily scheduled preflight workflow verifies those names are set:
 
 ## Core test completion gate (Issue #12)
 Core test scope and checklist live in [`docs/testing/core-test-strategy.md`](./docs/testing/core-test-strategy.md).
+For command selection by change type, use [`docs/testing/local-verification.md`](./docs/testing/local-verification.md).
 
 Gate must pass before merge:
 - `npm run lint`
