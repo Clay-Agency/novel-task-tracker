@@ -99,6 +99,8 @@ npm run verify:quick
 npm run verify:core
 ```
 
+Need a different command for docs-only, workflows-only, or targeted checks? See the [local verification command matrix](./docs/testing/local-verification.md).
+
 
 ## 2-stage review process (required)
 
