@@ -45,11 +45,14 @@ npm run start
 
 ## Quality checks
 ```bash
+npm run check:workflows
 npm run lint
 npm run typecheck
 npm run test
 npm run e2e
 ```
+
+`npm run check:workflows` validates the YAML files in `.github/workflows/` before you open a PR.
 
 ## Build
 ```bash
