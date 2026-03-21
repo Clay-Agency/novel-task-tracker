@@ -45,11 +45,14 @@ npm run start
 
 ## Quality checks
 ```bash
+npm run verify:docs
 npm run lint
 npm run typecheck
 npm run test
 npm run e2e
 ```
+
+`npm run verify:docs` runs the lightweight docs gate: workflow YAML validation plus repo-internal Markdown link checks.
 
 ## Build
 ```bash
