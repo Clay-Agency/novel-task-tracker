@@ -29,6 +29,17 @@ Checklist: [`docs/ops/open-decisions.md`](./docs/ops/open-decisions.md)
 - npm 9+
 
 ## Setup
+For the cleanest CI-aligned install on a fresh checkout, prefer:
+```bash
+npm run setup:clean
+```
+
+That script wraps:
+```bash
+npm ci
+```
+
+If you intentionally changed dependencies, use:
 ```bash
 npm install
 ```
