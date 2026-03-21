@@ -44,12 +44,17 @@ npm run start
 ```
 
 ## Quality checks
+Use `npm run verify:local` as the standard local pre-PR command. It runs Markdown link checks plus the default app verification path without the slower Playwright suite.
+
 ```bash
-npm run lint
-npm run typecheck
-npm run test
+npm run verify:local
+npm run verify:quick
+npm run verify:core
 npm run e2e
 ```
+
+`verify:local` expands to `npm run docs:links && npm run verify:quick`.
+For docs-only updates, you can still start with `npm run docs:links`.
 
 ## Build
 ```bash

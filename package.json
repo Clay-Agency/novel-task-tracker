@@ -16,6 +16,7 @@
     "docs:links": "lychee --no-progress --offline --exclude '^https?://' --exclude '^mailto:' README.md docs",
     "docs:links:docker": "docker run --rm -v \"$PWD\":/workdir -w /workdir ghcr.io/lycheeverse/lychee:latest --no-progress --offline --exclude '^https?://' --exclude '^mailto:' README.md docs",
     "verify:quick": "npm run check:workflows && npm run lint && npm run typecheck && npm test",
+    "verify:local": "npm run docs:links && npm run verify:quick",
     "verify:core": "npm run verify:quick && npm run build"
   },
   "dependencies": {
