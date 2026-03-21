@@ -25,7 +25,7 @@ Use the `needs-decision` label when an issue/PR is blocked on an **explicit deci
 Checklist: [`docs/ops/open-decisions.md`](./docs/ops/open-decisions.md)
 
 ## Prerequisites
-- Node.js 18+
+- Node.js 20.x (matches CI, `.nvmrc`, and `package.json#engines`)
 - npm 9+
 
 ## Setup
