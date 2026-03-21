@@ -25,10 +25,16 @@ Use the `needs-decision` label when an issue/PR is blocked on an **explicit deci
 Checklist: [`docs/ops/open-decisions.md`](./docs/ops/open-decisions.md)
 
 ## Prerequisites
-- Node.js 18+
-- npm 9+
+- Node.js 20+ (matches [`.nvmrc`](./.nvmrc))
+- npm 10+
 
 ## Setup
+Preferred clean install:
+```bash
+npm ci
+```
+
+If you intentionally need to refresh the lockfile after dependency changes:
 ```bash
 npm install
 ```
@@ -43,16 +49,20 @@ Alias command (same as `dev`):
 npm run start
 ```
 
-## Quality checks
+## Verification commands
+```bash
+npm run check:workflows
+npm run docs:links
+npm run verify:quick
+npm run verify:core
+```
+
+Additional targeted checks:
 ```bash
 npm run lint
 npm run typecheck
 npm run test
 npm run e2e
-```
-
-## Build
-```bash
 npm run build
 ```
 
