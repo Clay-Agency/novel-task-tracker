@@ -65,16 +65,12 @@ CI validates **internal/relative** links in `README.md` and `docs/**` (external 
 Run locally:
 
 ```bash
-# Option A: run via npm (requires lychee installed)
-#   brew install lychee
-#   # or: cargo install lychee
-
+# Default: repo-local checker (no lychee or Docker required)
 npm run docs:links
 
-# Option B: Docker (no local lychee install required)
+# Optional comparison path: run the lychee check in Docker
 #   Optional readiness check (daemon reachable):
 #   docker info >/dev/null
-
 npm run docs:links:docker
 
 # (Equivalent direct command)
