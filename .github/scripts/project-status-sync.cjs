@@ -27,6 +27,7 @@ function mapProjectFields(fieldsNodes) {
   const statusField = byName.get('status');
   const doneDateField = byName.get('done date') || byName.get('done_date') || byName.get('done');
   const needsDecisionField = byName.get('needs decision') || byName.get('needs_decision');
+  const evidenceField = byName.get('evidence');
 
   let statusDoneOptionId = null;
   if (statusField?.dataType === 'SINGLE_SELECT') {
@@ -39,6 +40,7 @@ function mapProjectFields(fieldsNodes) {
     statusDoneOptionId,
     doneDateField,
     needsDecisionField,
+    evidenceField,
   };
 }
 
@@ -126,6 +128,154 @@ async function getProjectItemForContent({ graphql, projectNumber, contentNodeId 
     content: node,
     itemId: item?.id || null,
     projectId: item?.project?.id || null,
+  };
+}
+
+
+function getTextFieldValue(fieldValueNodes, fieldName) {
+  const target = normalize(fieldName);
+  for (const node of fieldValueNodes || []) {
+    const currentName = normalize(node?.field?.name);
+    if (currentName !== target) continue;
+
+    if (typeof node?.text === 'string') return node.text;
+    if (typeof node?.name === 'string') return node.name;
+  }
+  return '';
+}
+
+function evidenceIncludesPr({ evidenceText, prUrl }) {
+  if (!evidenceText || !prUrl) return false;
+  return normalize(evidenceText).includes(normalize(prUrl));
+}
+
+function findCanonicalIssueItem({ issues, projectNumber, prUrl, evidenceFieldName = 'Evidence' }) {
+  for (const issue of issues || []) {
+    const items = issue?.projectItems?.nodes || [];
+    const projectItem = items.find((it) => it?.project?.number === projectNumber);
+    if (!projectItem) continue;
+
+    const evidenceText = getTextFieldValue(projectItem?.fieldValues?.nodes || [], evidenceFieldName);
+    if (!evidenceIncludesPr({ evidenceText, prUrl })) {
+      continue;
+    }
+
+    return {
+      issue,
+      itemId: projectItem.id || null,
+      evidenceText,
+    };
+  }
+  return null;
+}
+
+async function removeProjectItem({ graphql, projectId, itemId }) {
+  const mutation = `
+    mutation($projectId: ID!, $itemId: ID!) {
+      deleteProjectV2Item(input: { projectId: $projectId, itemId: $itemId }) {
+        deletedItemId
+      }
+    }
+  `;
+  await graphql(mutation, { projectId, itemId });
+}
+
+async function dedupePrItemAgainstCanonicalIssue({ graphql, core, meta, projectNumber, contentNodeId }) {
+  const query = `
+    query($id: ID!) {
+      node(id: $id) {
+        __typename
+        ... on PullRequest {
+          url
+          number
+          projectItems(first: 50) {
+            nodes {
+              id
+              project { id number }
+            }
+          }
+          closingIssuesReferences(first: 10) {
+            nodes {
+              id
+              number
+              url
+              projectItems(first: 50) {
+                nodes {
+                  id
+                  project { id number }
+                  fieldValues(first: 20) {
+                    nodes {
+                      __typename
+                      ... on ProjectV2ItemFieldTextValue {
+                        text
+                        field {
+                          ... on ProjectV2FieldCommon { name }
+                        }
+                      }
+                      ... on ProjectV2ItemFieldSingleSelectValue {
+                        name
+                        field {
+                          ... on ProjectV2FieldCommon { name }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  const res = await graphql(query, { id: contentNodeId });
+  const pr = res?.node;
+  if (!pr || pr.__typename !== 'PullRequest') {
+    core.info('Dedupe skipped: event payload did not resolve to a pull request.');
+    return { action: 'skipped', reason: 'not-a-pr' };
+  }
+
+  const prItem = (pr.projectItems?.nodes || []).find((it) => it?.project?.number === projectNumber);
+  if (!prItem?.id) {
+    core.info(`Dedupe skipped: PR #${pr.number} is not in Project #${projectNumber}.`);
+    return { action: 'skipped', reason: 'pr-not-in-project' };
+  }
+
+  const issues = pr.closingIssuesReferences?.nodes || [];
+  if (!issues.length) {
+    core.info(`Dedupe skipped: no controlling issue found for PR #${pr.number}.`);
+    return { action: 'skipped', reason: 'no-controlling-issue' };
+  }
+
+  const canonical = findCanonicalIssueItem({
+    issues,
+    projectNumber,
+    prUrl: pr.url,
+    evidenceFieldName: meta.evidenceField?.name || 'Evidence',
+  });
+
+  if (!canonical?.itemId) {
+    const anyIssueInProject = issues.some((issue) =>
+      (issue?.projectItems?.nodes || []).some((it) => it?.project?.number === projectNumber)
+    );
+
+    if (anyIssueInProject) {
+      core.info(`Dedupe skipped: issue exists in Project #${projectNumber} but Evidence does not yet contain ${pr.url}.`);
+      return { action: 'skipped', reason: 'manual-evidence-confirmation-needed' };
+    }
+
+    core.info(`Dedupe skipped: controlling issue exists but is not in Project #${projectNumber}.`);
+    return { action: 'skipped', reason: 'issue-not-in-project' };
+  }
+
+  await removeProjectItem({ graphql, projectId: meta.projectId || prItem.project?.id, itemId: prItem.id });
+  core.info(`Removed duplicate PR item for #${pr.number} because issue #${canonical.issue.number} is canonical.`);
+  return {
+    action: 'removed',
+    reason: 'canonical-issue-evidence-match',
+    prNumber: pr.number,
+    issueNumber: canonical.issue.number,
   };
 }
 
@@ -377,7 +527,15 @@ async function run({ github, context, core, env }) {
     contentNodeId = context.payload?.issue?.node_id;
   } else if (context.eventName === 'pull_request') {
     contentNodeId = context.payload?.pull_request?.node_id;
+    const action = context.payload?.action;
     const merged = Boolean(context.payload?.pull_request?.merged);
+    const dedupeActions = new Set(['opened', 'reopened', 'ready_for_review', 'edited']);
+
+    if (dedupeActions.has(action)) {
+      await dedupePrItemAgainstCanonicalIssue({ graphql, core, meta, projectNumber, contentNodeId });
+      return;
+    }
+
     if (!merged) {
       core.info('PR was closed but not merged; nothing to do.');
       return;
@@ -410,6 +568,10 @@ module.exports = {
   yyyyMmDd,
   mapProjectFields,
   getProjectMetadata,
+  getTextFieldValue,
+  evidenceIncludesPr,
+  findCanonicalIssueItem,
   syncOneItem,
+  dedupePrItemAgainstCanonicalIssue,
   run,
 };
