@@ -15,7 +15,7 @@ Conventions:
 - **Todo**: work not started / no one actively driving it yet.
 - **In progress**: an agent is actively working (usually set `Owner agent`).
 - **Blocked**: cannot proceed due to an external dependency (access, upstream change, waiting on review, etc.). If the blocker is a **decision**, set `Needs decision=True` and state the decision request in the issue.
-- **Review**: implementation is done and waiting on review/merge (typically there is an open PR).
+- **Review**: implementation is done and waiting on review/merge (typically there is an open PR). For merge sequencing when several review items are ready at once, use [`project-1-review-merge-order-checklist.md`](./project-1-review-merge-order-checklist.md).
 - **Done**: work is complete (merged/closed) and no further action is expected.
 
 ## Priority (single select)
