@@ -8,7 +8,10 @@ Use this checklist before each pilot session to keep setup consistent and avoid 
   - [ ] Onboarding packet: [`docs/pilot/onboarding.md`](./onboarding.md)
   - [ ] Demo flow: [`docs/pilot/demo-script.md`](./demo-script.md)
   - [ ] Interview prompts: [`docs/pilot/feedback-questions.md`](./feedback-questions.md)
+  - [ ] Success metrics: [`docs/pilot/success-metrics.md`](./success-metrics.md)
+  - [ ] Synthesis rubric: [`docs/pilot/feedback-synthesis-rubric.md`](./feedback-synthesis-rubric.md)
   - [ ] Synthesis template: [`docs/pilot/feedback-synthesis-template.md`](./feedback-synthesis-template.md)
+  - [ ] Pilot result template: [`docs/pilot/pilot-result-template.md`](./pilot-result-template.md)
 - [ ] Prepare a place to capture notes (doc, issue draft, or template copy).
 - [ ] Confirm meeting link + recording consent workflow (if recording is used).
 

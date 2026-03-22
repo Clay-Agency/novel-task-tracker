@@ -6,6 +6,8 @@ Define a lightweight measurement system for the pilot so we can decide whether t
 - Prefer data we already collect in pilot operations.
 - Use existing templates first:
   - [`feedback-synthesis-template.md`](./feedback-synthesis-template.md)
+  - [`feedback-synthesis-rubric.md`](./feedback-synthesis-rubric.md)
+  - [`pilot-result-template.md`](./pilot-result-template.md)
   - [`weekly-report-format.md`](./weekly-report-format.md)
 - Collect only what drives decisions (stop collecting if unused for 2+ weeks).
 - Keep metrics directional for pilot-stage confidence, not precision benchmarking.
@@ -15,6 +17,11 @@ Define a lightweight measurement system for the pilot so we can decide whether t
 2. **Weekly report** (primary roll-up and trend view).
 3. **Optional local usage logs** (secondary quantitative support; use when available).
 4. **Facilitator quick survey/scoring** from `feedback-questions.md` after sessions.
+
+## Pilot-specific interpretation guardrails
+- Treat these metrics as **directional** because the pilot is currently frontend-only and stores data in `localStorage`.
+- Do not let missing account/sync/backend features dominate the score unless they directly block the intended pilot workflow.
+- Give extra weight to **TEFQ usefulness, explainability, and trust**, since TEFQ is the main differentiator being validated.
 
 ---
 

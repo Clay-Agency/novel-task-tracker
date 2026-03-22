@@ -6,7 +6,8 @@ Use this template to turn raw pilot sessions into actionable product and enginee
 1. Create one synthesis entry per participant/session.
 2. Capture direct evidence (quotes, screen recording timestamps, repro notes).
 3. Convert findings into GitHub issues and link them.
-4. Roll high-signal findings into the weekly report format.
+4. Score findings using [`feedback-synthesis-rubric.md`](./feedback-synthesis-rubric.md).
+5. Roll high-signal findings into the weekly report format or [`pilot-result-template.md`](./pilot-result-template.md).
 
 ---
 
