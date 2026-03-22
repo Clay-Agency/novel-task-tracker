@@ -9,6 +9,7 @@ This runbook covers the scheduled CI maintenance workflow used to catch regressi
 ## Related runbooks
 - Project #1 maintainer doc hub: [`project-1-maintainer-runbook-index.md`](./project-1-maintainer-runbook-index.md)
 - Projects v2 auth (GitHub App) setup + troubleshooting: [`docs/ops/projects-v2-auth-runbook.md`](./projects-v2-auth-runbook.md)
+- Project #1 review-item triage shortcut: [`project-1-ci-triage-quick-guide.md`](./project-1-ci-triage-quick-guide.md)
 
 ## Trigger modes
 The workflow runs in two ways:
