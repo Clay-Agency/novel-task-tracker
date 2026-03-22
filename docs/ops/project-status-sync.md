@@ -8,6 +8,16 @@ It syncs **Clay-Agency org Project #1** (Projects v2 / `ProjectV2`) fields when:
 - on a daily scheduled reconciliation
 - manually via `workflow_dispatch`
 
+## Relationship to the Review queue convention
+
+Project #1 review should normally track the **issue item**, not a duplicate PR item, for the same unit of work. Under that convention:
+
+- when a linked PR is merged and the PR is **not** in Project #1, the PR event is expected to no-op
+- the linked **issue** remains the canonical Project item and is the item that should move to `Done` on issue close
+- the issue item’s `Evidence` field should carry the PR link while work is in `Review`
+
+This workflow does **not** decide which item should be in `Review`; it only syncs closed/merged items to `Done`-style fields.
+
 ## Token / permissions (Projects v2)
 
 Detailed setup (GitHub App least-privilege, PAT fallback, troubleshooting): [`docs/ops/projects-v2-auth-runbook.md`](./projects-v2-auth-runbook.md).
