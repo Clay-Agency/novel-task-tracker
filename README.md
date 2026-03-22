@@ -59,6 +59,7 @@ npm run build
 ## Ops / Automation
 
 ### Quick links
+- Project #1 review-clearing quick start: [`docs/ops/project-1-review-clearing-quick-start.md`](./docs/ops/project-1-review-clearing-quick-start.md)
 - Projects v2 auth runbook: [`docs/ops/projects-v2-auth-runbook.md`](./docs/ops/projects-v2-auth-runbook.md)
 - Project #1 field conventions: [`docs/ops/project-1-field-conventions.md`](./docs/ops/project-1-field-conventions.md)
 - Clay admin quickstart: [`docs/ops/clay-admin-quickstart.md`](./docs/ops/clay-admin-quickstart.md)
