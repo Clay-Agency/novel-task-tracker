@@ -18,6 +18,8 @@ Conventions:
 - **Review**: implementation is done and waiting on review/merge (typically there is an open PR).
 - **Done**: work is complete (merged/closed) and no further action is expected.
 
+Post-merge cleanup checklist: [`docs/ops/project-1-post-merge-hygiene-checklist.md`](./project-1-post-merge-hygiene-checklist.md)
+
 ## Priority (single select)
 
 Allowed values:
@@ -65,3 +67,4 @@ Conventions:
   - `Decision record: docs/decisions/DR-XXXX-...md`
   - `QA evidence: <url or docs/qa/...#anchor>`
 - When moving work to **Review** or **Done**, make sure the Evidence field includes the relevant PR/merge reference.
+- After merge, run the short post-merge cleanup pass before leaving the item in **Done**: remove redundant PR items, confirm final status, and keep only the durable completion links.
