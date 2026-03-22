@@ -65,3 +65,11 @@ Conventions:
   - `Decision record: docs/decisions/DR-XXXX-...md`
   - `QA evidence: <url or docs/qa/...#anchor>`
 - When moving work to **Review** or **Done**, make sure the Evidence field includes the relevant PR/merge reference.
+
+## Review queue de-duplication convention
+
+Conventions:
+- For normal issue-driven work, keep the **issue item** as the canonical Project #1 tracking record.
+- If the issue item is already in **Review** and its `Evidence` field links the active PR, remove the redundant **PR item** from Project #1 instead of carrying both issue + PR review records.
+- Keep a PR item only when it represents a genuinely separate thing to review (for example, standalone PR-only work or a temporary maintainer workflow that is not already tracked by an issue item).
+- During cleanup passes, verify the paired issue still has the correct PR URL in `Evidence` before deleting the duplicate PR item.
