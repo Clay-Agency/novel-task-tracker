@@ -2,6 +2,8 @@
 
 Goal: require the **Verify (core)** GitHub Actions check to pass before merging to `main`.
 
+Related Project #1 maintainer docs: [`project-1-maintainer-runbook-index.md`](./project-1-maintainer-runbook-index.md)
+
 ## Enable (GitHub UI)
 1. Open the repo on GitHub.
 2. Go to **Settings** → **Branches**.

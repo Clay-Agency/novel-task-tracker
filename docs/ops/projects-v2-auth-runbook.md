@@ -1,5 +1,7 @@
 # Runbook — Projects v2 auth (GitHub App) for Clay-Agency org Project #1
 
+Related maintainer docs: [`project-1-maintainer-runbook-index.md`](./project-1-maintainer-runbook-index.md)
+
 This repo has GitHub Actions automation that **reads + updates** the Clay-Agency **organization Project (Projects v2 / `ProjectV2`)** via the **GraphQL API**.
 
 GitHub’s built-in Actions token (`GITHUB_TOKEN`) **cannot** mutate **organization Projects v2**, so we use a **GitHub App installation token** minted at runtime.

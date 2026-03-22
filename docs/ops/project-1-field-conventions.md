@@ -2,6 +2,8 @@
 
 As observed **2026-03-06** (fields/options may evolve).
 
+Project #1 maintainer navigation hub: [`project-1-maintainer-runbook-index.md`](./project-1-maintainer-runbook-index.md)
+
 ## Status (single select)
 
 Allowed values:
