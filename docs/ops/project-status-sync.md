@@ -4,9 +4,12 @@ The repo includes a GitHub Actions workflow: `.github/workflows/project-status-s
 
 It syncs **Clay-Agency org Project #1** (Projects v2 / `ProjectV2`) fields when:
 - an issue is closed
+- a PR is opened, reopened, marked ready for review, or edited (narrow duplicate-PR-item prevention)
 - a PR is closed (only acts when merged)
 - on a daily scheduled reconciliation
 - manually via `workflow_dispatch`
+
+For PR lifecycle dedupe, the workflow only removes a PR Project item when it can prove a controlling issue item already exists in Project #1 **and** that issue item's `Evidence` field already contains the same PR URL. Otherwise it logs a skip/no-op path for manual review.
 
 ## Token / permissions (Projects v2)
 

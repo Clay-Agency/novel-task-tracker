@@ -2,7 +2,7 @@ name: Sync Clay Project status
 
 on:
   pull_request:
-    types: [closed]
+    types: [opened, reopened, ready_for_review, edited, closed]
   issues:
     types: [closed]
   workflow_dispatch:
