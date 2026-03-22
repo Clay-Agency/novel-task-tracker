@@ -3,6 +3,7 @@
 As observed **2026-03-06** (fields/options may evolve).
 
 Project #1 maintainer navigation hub: [`project-1-maintainer-runbook-index.md`](./project-1-maintainer-runbook-index.md)
+Project #1 lifecycle map: [`project-1-maintainer-lifecycle-map.md`](./project-1-maintainer-lifecycle-map.md)
 
 ## Status (single select)
 
@@ -21,6 +22,7 @@ Conventions:
 - **Done**: work is complete (merged/closed) and no further action is expected.
 
 Maintainer blocker-vs-ready triage guide: [`docs/ops/project-1-triage-guide.md`](./project-1-triage-guide.md)
+Post-merge cleanup checklist: [`docs/ops/project-1-post-merge-hygiene-checklist.md`](./project-1-post-merge-hygiene-checklist.md)
 
 ## Priority (single select)
 
@@ -69,3 +71,4 @@ Conventions:
   - `Decision record: docs/decisions/DR-XXXX-...md`
   - `QA evidence: <url or docs/qa/...#anchor>`
 - When moving work to **Review** or **Done**, make sure the Evidence field includes the relevant PR/merge reference.
+- After merge, run the short post-merge cleanup pass before leaving the item in **Done**: remove redundant PR items, confirm final status, and keep only the durable completion links.

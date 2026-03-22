@@ -59,14 +59,16 @@ npm run build
 ## Ops / Automation
 
 ### Quick links
+- Project #1 maintainer lifecycle map: [`docs/ops/project-1-maintainer-lifecycle-map.md`](./docs/ops/project-1-maintainer-lifecycle-map.md)
 - Project #1 review-clearing quick start: [`docs/ops/project-1-review-clearing-quick-start.md`](./docs/ops/project-1-review-clearing-quick-start.md)
-- Projects v2 auth runbook: [`docs/ops/projects-v2-auth-runbook.md`](./docs/ops/projects-v2-auth-runbook.md)
-- Project #1 field conventions: [`docs/ops/project-1-field-conventions.md`](./docs/ops/project-1-field-conventions.md)
 - Project #1 maintainer triage guide: [`docs/ops/project-1-triage-guide.md`](./docs/ops/project-1-triage-guide.md)
-- Clay admin quickstart: [`docs/ops/clay-admin-quickstart.md`](./docs/ops/clay-admin-quickstart.md)
-- Branch protection runbook (require **Verify (core)** on `main`): [`docs/ops/branch-protection.md`](./docs/ops/branch-protection.md)
 - Project #1 CI triage quick guide: [`docs/ops/project-1-ci-triage-quick-guide.md`](./docs/ops/project-1-ci-triage-quick-guide.md)
 - Project #1 review-queue daily loop SOP: [`docs/ops/project-1-review-queue-daily-loop.md`](./docs/ops/project-1-review-queue-daily-loop.md)
+- Project #1 post-merge hygiene checklist: [`docs/ops/project-1-post-merge-hygiene-checklist.md`](./docs/ops/project-1-post-merge-hygiene-checklist.md)
+- Project #1 field conventions: [`docs/ops/project-1-field-conventions.md`](./docs/ops/project-1-field-conventions.md)
+- Projects v2 auth runbook: [`docs/ops/projects-v2-auth-runbook.md`](./docs/ops/projects-v2-auth-runbook.md)
+- Clay admin quickstart: [`docs/ops/clay-admin-quickstart.md`](./docs/ops/clay-admin-quickstart.md)
+- Branch protection runbook (require **Verify (core)** on `main`): [`docs/ops/branch-protection.md`](./docs/ops/branch-protection.md)
 
 Project #1 status sync workflows require **GitHub Projects v2 auth** (separate token).
 Tracking issue: [#80](https://github.com/Clay-Agency/novel-task-tracker/issues/80)
