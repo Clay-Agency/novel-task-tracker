@@ -17,7 +17,8 @@ nvm use
 1. Branch from `main` with `feat/issue-<number>-<summary>`.
 2. Keep commits scoped to one issue.
 3. Open a PR that links the issue (example: `Closes #14`).
-4. Follow the **2-stage review process** below before requesting merge.
+4. Prefer PRs targeting `main`. If a Project #1 follow-up PR must temporarily stack on another open PR for clean scope, document the dependency in the PR body (for example `Depends on #261`) and follow the runbook: [`docs/ops/project-1-stacked-follow-up-prs.md`](./docs/ops/project-1-stacked-follow-up-prs.md).
+5. Follow the **2-stage review process** below before requesting merge.
 
 
 ## Where to file what
@@ -57,6 +58,7 @@ For QA findings (and QA-discovered bugs), include a direct link to the relevant 
 
 - [Projects v2 auth runbook](./docs/ops/projects-v2-auth-runbook.md): Use when configuring or debugging GitHub Actions auth for workflows that read/update the Clay-Agency org Project #1 (GraphQL `ProjectV2`).
 - [Project #1 field conventions](./docs/ops/project-1-field-conventions.md): Use when triaging work on the Project #1 board or building automation that writes project fields (Status, Priority, Owner agent, Needs decision, Evidence).
+- [Project #1 stacked follow-up PR handling](./docs/ops/project-1-stacked-follow-up-prs.md): Use when a Project #1 follow-up PR is intentionally based on another still-open PR and needs later retarget/rebase onto `main`.
 
 ## Markdown link check
 
