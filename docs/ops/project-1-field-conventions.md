@@ -15,8 +15,14 @@ Conventions:
 - **Todo**: work not started / no one actively driving it yet.
 - **In progress**: an agent is actively working (usually set `Owner agent`).
 - **Blocked**: cannot proceed due to an external dependency (access, upstream change, waiting on review, etc.). If the blocker is a **decision**, set `Needs decision=True` and state the decision request in the issue.
-- **Review**: implementation is done and waiting on review/merge (typically there is an open PR).
+- **Review**: implementation is done and waiting on review/merge (typically there is an open PR). In Project #1, **Review should track the issue item, not a duplicate PR item, for the same underlying work**.
 - **Done**: work is complete (merged/closed) and no further action is expected.
+
+Review queue convention:
+- Treat the **issue** as the canonical/actionable Project #1 item for a unit of work.
+- When implementation is ready for review, move the **issue item** to `Review` and add the PR URL to the issue item's `Evidence` field.
+- **Do not add the implementation PR to Project #1** when it would duplicate the issue already being tracked. This keeps heartbeat/review queues low-noise.
+- Exception: a PR may be added to Project #1 only when the **PR itself is the primary work item** (for example, repo-maintenance work with no controlling issue). In that case, the PR item can carry the actionable status.
 
 ## Priority (single select)
 
@@ -57,11 +63,11 @@ Conventions:
 ## Evidence (text)
 
 Conventions:
-- Use this field as the **living link hub** for the issue/PR. Keep it short (typically 1–5 lines).
+- Use this field as the **living link hub** for the canonical Project item (usually the issue). Keep it short (typically 1–5 lines).
 - Prefer durable URLs (PR link, Actions run link, doc/decision record path, screenshot/GIF link).
 - Suggested format (one item per line):
   - `PR: <url>`
   - `CI: <url>`
   - `Decision record: docs/decisions/DR-XXXX-...md`
   - `QA evidence: <url or docs/qa/...#anchor>`
-- When moving work to **Review** or **Done**, make sure the Evidence field includes the relevant PR/merge reference.
+- When moving work to **Review** or **Done**, make sure the canonical item’s Evidence field includes the relevant PR/merge reference.

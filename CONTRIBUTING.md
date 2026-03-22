@@ -34,6 +34,15 @@ When you add an issue/PR to the **Clay-Agency org Project #1** board, keep these
 - **Needs decision**: set `True` (and apply label `needs-decision`) only when progress is blocked on an explicit Clay decision. Put the decision question + options in the issue.
 - **Evidence**: paste the key links that justify the current state (PR, CI run, screenshots/GIFs, decision record). Keep it short; one item per line.
 
+### Review queue convention (Project #1)
+
+To avoid duplicate `Review` queue items for the same work:
+
+- Treat the **issue** as the canonical/actionable Project #1 item.
+- When a PR is ready, move the **issue item** to `Review`.
+- Add the PR link to the issue item’s **Evidence** field instead of adding the PR itself to Project #1.
+- Only add a PR to Project #1 when the PR is the primary work item and there is no controlling issue.
+
 Details: [`docs/ops/project-1-field-conventions.md`](./docs/ops/project-1-field-conventions.md)
 
 ## Needs-decision convention

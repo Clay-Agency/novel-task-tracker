@@ -4,6 +4,8 @@
 ## Linked Issue
 - Closes #
 
+> Project #1 review-queue convention: keep the **issue item** as the actionable `Review` item and add this PR URL to that issue item's **Evidence** field. Do **not** add this PR to Project #1 when it would duplicate the linked issue.
+
 ## 2-stage review confirmation
 ### Stage 1 — Self-review (author, xhigh reasoning)
 - [ ] I completed self-review using xhigh reasoning (requirements, assumptions, edge cases, failure paths).
