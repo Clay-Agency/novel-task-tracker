@@ -44,12 +44,28 @@ npm run start
 ```
 
 ## Quality checks
+Canonical contributor validation commands live in [`CONTRIBUTING.md#canonical-local-verification-commands`](./CONTRIBUTING.md#canonical-local-verification-commands).
+
+Common entry points:
+
 ```bash
+# Docs-only validation for README.md + docs/** internal links
+npm run docs:links
+
+# Fast inner-loop verification (no build)
+npm run verify:quick
+
+# Full pre-merge verification (includes build)
+npm run verify:core
+
+# Targeted checks when you need them individually
 npm run lint
 npm run typecheck
 npm run test
 npm run e2e
 ```
+
+For docs-only changes, prefer `npm run docs:links`. If local `lychee` is unavailable, use the Docker fallback documented in `CONTRIBUTING.md`. `npm run verify:core` is still recommended for broader code changes, but it does **not** replace the dedicated docs link check for README/docs edits.
 
 ## Build
 ```bash
