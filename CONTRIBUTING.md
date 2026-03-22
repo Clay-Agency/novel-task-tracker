@@ -87,11 +87,17 @@ npm run docs:links:docker
 ```
 
 
-## Local verification commands
+## Canonical local verification commands
 
-Use the quick check during development, and full check before final review:
+Use the commands below as the **canonical local validation entry points** for this repo.
+If you are writing docs/issues/PRs, reference these exact commands rather than inventing aliases such as `npm run verify:docs`.
 
 ```bash
+# Docs-only validation for README.md + docs/** internal links
+npm run docs:links
+# or, if lychee is not installed locally:
+npm run docs:links:docker
+
 # Fast inner-loop verification (no build)
 npm run verify:quick
 
