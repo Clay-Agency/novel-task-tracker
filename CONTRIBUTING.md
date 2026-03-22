@@ -55,6 +55,7 @@ For QA findings (and QA-discovered bugs), include a direct link to the relevant 
 
 ## Ops runbooks (Project #1 automation)
 
+- [Project #1 maintainer runbook index](./docs/ops/project-1-maintainer-runbook-index.md): Start here for maintainer queue handling; routes routine review work vs anomaly/debug paths across the Project #1 runbooks.
 - [Projects v2 auth runbook](./docs/ops/projects-v2-auth-runbook.md): Use when configuring or debugging GitHub Actions auth for workflows that read/update the Clay-Agency org Project #1 (GraphQL `ProjectV2`).
 - [Project #1 field conventions](./docs/ops/project-1-field-conventions.md): Use when triaging work on the Project #1 board or building automation that writes project fields (Status, Priority, Owner agent, Needs decision, Evidence).
 
