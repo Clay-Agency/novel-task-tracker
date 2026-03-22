@@ -58,47 +58,53 @@ For QA findings (and QA-discovered bugs), include a direct link to the relevant 
 - [Projects v2 auth runbook](./docs/ops/projects-v2-auth-runbook.md): Use when configuring or debugging GitHub Actions auth for workflows that read/update the Clay-Agency org Project #1 (GraphQL `ProjectV2`).
 - [Project #1 field conventions](./docs/ops/project-1-field-conventions.md): Use when triaging work on the Project #1 board or building automation that writes project fields (Status, Priority, Owner agent, Needs decision, Evidence).
 
-## Markdown link check
+## Canonical docs-only validation path
 
 CI validates **internal/relative** links in `README.md` and `docs/**` (external URLs are intentionally skipped to avoid flaky failures).
 
-Run locally:
+When your change is docs-only or touches `README.md`, `docs/**`, or docs-facing templates, use this fallback order:
+
+1. Preferred: run `npm run docs:links` if local `lychee` is installed.
+2. If `lychee` is unavailable locally: run `npm run docs:links:docker`.
+3. If neither local `lychee` nor Docker is available: do **not** invent another docs alias. Note in the PR that the docs link check could not be run locally, and rely on the required CI workflow **Markdown link check** to catch link regressions.
+
+Important: `npm run verify:core` is useful for broader pre-merge validation, but it does **not** run the Markdown link checker and is **not** a substitute for `npm run docs:links` / `npm run docs:links:docker` when docs links changed.
 
 ```bash
-# Option A: run via npm (requires lychee installed)
+# Preferred: local lychee installed
 #   brew install lychee
 #   # or: cargo install lychee
-
 npm run docs:links
 
-# Option B: Docker (no local lychee install required)
+# Fallback: no local lychee, but Docker/OrbStack is available
 #   Optional readiness check (daemon reachable):
 #   docker info >/dev/null
-
 npm run docs:links:docker
 
-# (Equivalent direct command)
-# docker run --rm -v "$(pwd)":/workdir -w /workdir \
+# Equivalent direct Docker command
+# docker run --rm -v "$PWD":/workdir -w /workdir \
 #   ghcr.io/lycheeverse/lychee:latest \
 #   --no-progress --offline --exclude '^https?://' --exclude '^mailto:' README.md docs
-
-# If you see "Cannot connect to the Docker daemon", start Docker/OrbStack first,
-# then rerun the command.
 ```
 
+If Docker reports `Cannot connect to the Docker daemon`, start Docker/OrbStack first and rerun `npm run docs:links:docker`.
 
-## Local verification commands
+## Canonical local verification commands
 
-Use the quick check during development, and full check before final review:
+Use the commands below as the canonical local validation entry points for this repo. Reference these exact commands in issues/PRs instead of inventing aliases such as `npm run verify:docs`.
 
 ```bash
+# Docs-only validation for README.md + docs/** internal links
+npm run docs:links
+# or, if local lychee is unavailable:
+npm run docs:links:docker
+
 # Fast inner-loop verification (no build)
 npm run verify:quick
 
 # Full pre-merge verification (includes build)
 npm run verify:core
 ```
-
 
 ## 2-stage review process (required)
 
@@ -122,6 +128,7 @@ After Stage 1 is complete, request final review from **Boe**.
 - [ ] Linked issue(s) included (`Closes #...`)
 - [ ] Stage 1 self-review complete (xhigh reasoning applied)
 - [ ] `npm run verify:core` result attached
+- [ ] Docs-only validation evidence attached when README.md, `docs/**`, or docs-facing templates changed (`npm run docs:links` or `npm run docs:links:docker`; otherwise explain why CI covered it)
 - [ ] (optional) individual command outputs attached when needed (`check:workflows`, `lint`, `typecheck`, `test`, `build`)
 - [ ] UI change evidence attached (screenshots/GIF), or marked N/A
 - [ ] Risks/edge cases documented
