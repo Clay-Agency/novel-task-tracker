@@ -57,6 +57,7 @@ For QA findings (and QA-discovered bugs), include a direct link to the relevant 
 
 - [Projects v2 auth runbook](./docs/ops/projects-v2-auth-runbook.md): Use when configuring or debugging GitHub Actions auth for workflows that read/update the Clay-Agency org Project #1 (GraphQL `ProjectV2`).
 - [Project #1 field conventions](./docs/ops/project-1-field-conventions.md): Use when triaging work on the Project #1 board or building automation that writes project fields (Status, Priority, Owner agent, Needs decision, Evidence).
+- [Project #1 post-merge hygiene checklist](./docs/ops/project-1-post-merge-hygiene-checklist.md): Use right after merge/close to verify final Status/Evidence, remove redundant PR items, and decide whether a one-off note or durable doc update is needed.
 
 ## Markdown link check
 
