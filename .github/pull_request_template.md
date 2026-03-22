@@ -39,4 +39,4 @@ npm run build
 - 
 
 ## Additional notes
-- 
+- If this PR is intentionally stacked on another open PR, note `Depends on #...`, explain the temporary base branch, and plan to retarget/rebase to `main` after the prerequisite merges.
