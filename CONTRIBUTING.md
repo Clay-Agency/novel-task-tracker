@@ -35,6 +35,7 @@ When you add an issue/PR to the **Clay-Agency org Project #1** board, keep these
 - **Evidence**: paste the key links that justify the current state (PR, CI run, screenshots/GIFs, decision record). Keep it short; one item per line.
 
 Details: [`docs/ops/project-1-field-conventions.md`](./docs/ops/project-1-field-conventions.md)
+To prevent linked implementation PR duplicates from reappearing, use the prevention plan: [`docs/ops/project-1-pr-item-dedupe-prevention.md`](./docs/ops/project-1-pr-item-dedupe-prevention.md)
 
 ## Needs-decision convention
 
