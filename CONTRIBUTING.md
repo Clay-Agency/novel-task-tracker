@@ -60,34 +60,14 @@ For QA findings (and QA-discovered bugs), include a direct link to the relevant 
 
 ## Canonical docs-only validation path
 
-CI validates **internal/relative** links in `README.md` and `docs/**` (external URLs are intentionally skipped to avoid flaky failures).
+Use [`docs/ops/docs-validation.md`](./docs/ops/docs-validation.md) as the canonical reference for:
 
-When your change is docs-only or touches `README.md`, `docs/**`, or docs-facing templates, use this fallback order:
+- when docs-link validation is required
+- which command is required vs fallback-only
+- local `lychee` vs Docker fallback steps
+- what to note in the PR when only CI can cover the check
 
-1. Preferred: run `npm run docs:links` if local `lychee` is installed.
-2. If `lychee` is unavailable locally: run `npm run docs:links:docker`.
-3. If neither local `lychee` nor Docker is available: do **not** invent another docs alias. Note in the PR that the docs link check could not be run locally, and rely on the required CI workflow **Markdown link check** to catch link regressions.
-
-Important: `npm run verify:core` is useful for broader pre-merge validation, but it does **not** run the Markdown link checker and is **not** a substitute for `npm run docs:links` / `npm run docs:links:docker` when docs links changed.
-
-```bash
-# Preferred: local lychee installed
-#   brew install lychee
-#   # or: cargo install lychee
-npm run docs:links
-
-# Fallback: no local lychee, but Docker/OrbStack is available
-#   Optional readiness check (daemon reachable):
-#   docker info >/dev/null
-npm run docs:links:docker
-
-# Equivalent direct Docker command
-# docker run --rm -v "$PWD":/workdir -w /workdir \
-#   ghcr.io/lycheeverse/lychee:latest \
-#   --no-progress --offline --exclude '^https?://' --exclude '^mailto:' README.md docs
-```
-
-If Docker reports `Cannot connect to the Docker daemon`, start Docker/OrbStack first and rerun `npm run docs:links:docker`.
+Do not duplicate or reword that guidance in issues, PRs, or follow-up docs updates; link back to the reference instead.
 
 ## Canonical local verification commands
 
@@ -95,6 +75,7 @@ Use the commands below as the canonical local validation entry points for this r
 
 ```bash
 # Docs-only validation for README.md + docs/** internal links
+# See docs/ops/docs-validation.md for required-vs-fallback guidance.
 npm run docs:links
 # or, if local lychee is unavailable:
 npm run docs:links:docker
