@@ -16,8 +16,10 @@ This guide helps facilitators run consistent pilot sessions, collect high-signal
 2. Review script and prompts:
    - Demo flow: [`docs/pilot/demo-script.md`](./demo-script.md)
    - Interview prompts: [`docs/pilot/feedback-questions.md`](./feedback-questions.md)
-3. Prepare synthesis template for immediate post-session consolidation:
+3. Prepare synthesis materials for immediate post-session consolidation:
    - [`docs/pilot/feedback-synthesis-template.md`](./feedback-synthesis-template.md)
+   - [`docs/pilot/feedback-synthesis-rubric.md`](./feedback-synthesis-rubric.md)
+   - [`docs/pilot/pilot-result-template.md`](./pilot-result-template.md)
 
 ## Suggested run-of-show (30–40 minutes)
 
@@ -69,7 +71,7 @@ Good evidence example:
 ## Converting insights into issues
 Immediately after session:
 1. Fill synthesis template sections (observations, bugs, requests).
-2. Assign severity and priority rubric in template.
+2. Score findings with the synthesis rubric (`Severity / Frequency / Actionability`) and then assign severity/priority in the template.
 3. Open/link GitHub issues for each high-signal finding.
 4. Add top findings to weekly report format.
 
