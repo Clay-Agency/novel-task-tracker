@@ -20,6 +20,8 @@ Conventions:
 - **Review**: implementation is done and waiting on review/merge (typically there is an open PR).
 - **Done**: work is complete (merged/closed) and no further action is expected.
 
+Maintainer blocker-vs-ready triage guide: [`docs/ops/project-1-triage-guide.md`](./project-1-triage-guide.md)
+
 ## Priority (single select)
 
 Allowed values:
