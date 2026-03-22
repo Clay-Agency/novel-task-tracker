@@ -57,6 +57,7 @@ For QA findings (and QA-discovered bugs), include a direct link to the relevant 
 
 - [Projects v2 auth runbook](./docs/ops/projects-v2-auth-runbook.md): Use when configuring or debugging GitHub Actions auth for workflows that read/update the Clay-Agency org Project #1 (GraphQL `ProjectV2`).
 - [Project #1 field conventions](./docs/ops/project-1-field-conventions.md): Use when triaging work on the Project #1 board or building automation that writes project fields (Status, Priority, Owner agent, Needs decision, Evidence).
+- [Project #1 maintainer triage guide](./docs/ops/project-1-triage-guide.md): Use during cleanup/review passes to distinguish Clay-decision blockers, dependency blockers, and merge-ready review items.
 
 ## Markdown link check
 
