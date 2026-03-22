@@ -35,6 +35,7 @@ When you add an issue/PR to the **Clay-Agency org Project #1** board, keep these
 - **Evidence**: paste the key links that justify the current state (PR, CI run, screenshots/GIFs, decision record). Keep it short; one item per line.
 
 Details: [`docs/ops/project-1-field-conventions.md`](./docs/ops/project-1-field-conventions.md)
+If Project #1 still has older duplicate review items, use the cleanup runbook: [`docs/ops/project-1-review-queue-cleanup.md`](./docs/ops/project-1-review-queue-cleanup.md)
 
 ## Needs-decision convention
 
