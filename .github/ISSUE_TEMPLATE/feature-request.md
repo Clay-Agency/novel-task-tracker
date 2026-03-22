@@ -23,7 +23,7 @@ List alternatives or why current behavior is insufficient.
 Any constraints, dependencies, or non-goals.
 
 ## QA / validation notes
-Reference relevant checklist docs/sections in `docs/qa/` if this request introduces UI/behavior that should be covered.
+Reference relevant checklist docs/sections in `docs/qa/` if this request introduces UI/behavior that should be covered. When proposing repo-supported local verification commands, use the canonical list in `CONTRIBUTING.md#canonical-local-verification-commands` (for docs-only work, that means `npm run docs:links`, not `npm run verify:docs`).
 
 ## Success criteria
 How will we know this request is done?
