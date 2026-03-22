@@ -63,6 +63,8 @@ npm run build
 - Project #1 field conventions: [`docs/ops/project-1-field-conventions.md`](./docs/ops/project-1-field-conventions.md)
 - Clay admin quickstart: [`docs/ops/clay-admin-quickstart.md`](./docs/ops/clay-admin-quickstart.md)
 - Branch protection runbook (require **Verify (core)** on `main`): [`docs/ops/branch-protection.md`](./docs/ops/branch-protection.md)
+- Project #1 CI triage quick guide: [`docs/ops/project-1-ci-triage-quick-guide.md`](./docs/ops/project-1-ci-triage-quick-guide.md)
+- Project #1 review-queue daily loop SOP: [`docs/ops/project-1-review-queue-daily-loop.md`](./docs/ops/project-1-review-queue-daily-loop.md)
 
 Project #1 status sync workflows require **GitHub Projects v2 auth** (separate token).
 Tracking issue: [#80](https://github.com/Clay-Agency/novel-task-tracker/issues/80)
