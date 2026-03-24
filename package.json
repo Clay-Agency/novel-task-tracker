@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "doctor:local": "node scripts/doctor-local.mjs",
     "dev": "vite",
     "start": "vite",
     "build": "vite build",
