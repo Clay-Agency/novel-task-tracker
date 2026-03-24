@@ -2,6 +2,8 @@
 
 Use this when Project #1 is auto-adding “meta”/automation issues (for context, see #169).
 
+Related Project #1 maintainer docs: [`project-1-maintainer-runbook-index.md`](./project-1-maintainer-runbook-index.md)
+
 ## Goal
 Update the Project #1 **Workflows → Auto-add** filter to exclude issues labeled `automation` by appending `-label:automation`.
 

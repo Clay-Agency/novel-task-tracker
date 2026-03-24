@@ -12,6 +12,8 @@ It syncs **Clay-Agency org Project #1** (Projects v2 / `ProjectV2`) fields when:
 
 Detailed setup (GitHub App least-privilege, PAT fallback, troubleshooting): [`docs/ops/projects-v2-auth-runbook.md`](./projects-v2-auth-runbook.md).
 
+For the broader Project #1 maintainer runbook set, start from [`project-1-maintainer-runbook-index.md`](./project-1-maintainer-runbook-index.md).
+
 GitHub’s built-in Actions token (`secrets.GITHUB_TOKEN`) **cannot** update **organization Projects v2** via GraphQL.
 
 You must provide **one** of the following:

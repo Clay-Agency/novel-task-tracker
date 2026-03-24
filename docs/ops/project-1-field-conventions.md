@@ -2,6 +2,9 @@
 
 As observed **2026-03-06** (fields/options may evolve).
 
+Project #1 maintainer navigation hub: [`project-1-maintainer-runbook-index.md`](./project-1-maintainer-runbook-index.md)
+Project #1 lifecycle map: [`project-1-maintainer-lifecycle-map.md`](./project-1-maintainer-lifecycle-map.md)
+
 ## Status (single select)
 
 Allowed values:
@@ -15,8 +18,11 @@ Conventions:
 - **Todo**: work not started / no one actively driving it yet.
 - **In progress**: an agent is actively working (usually set `Owner agent`).
 - **Blocked**: cannot proceed due to an external dependency (access, upstream change, waiting on review, etc.). If the blocker is a **decision**, set `Needs decision=True` and state the decision request in the issue.
-- **Review**: implementation is done and waiting on review/merge (typically there is an open PR).
+- **Review**: implementation is done and waiting on review/merge (typically there is an open PR). Draft/stacked PRs do **not** belong here until the next action is truly final review/merge.
 - **Done**: work is complete (merged/closed) and no further action is expected.
+
+Maintainer blocker-vs-ready triage guide: [`docs/ops/project-1-triage-guide.md`](./project-1-triage-guide.md)
+Post-merge cleanup checklist: [`docs/ops/project-1-post-merge-hygiene-checklist.md`](./project-1-post-merge-hygiene-checklist.md)
 
 ## Priority (single select)
 
@@ -64,4 +70,8 @@ Conventions:
   - `CI: <url>`
   - `Decision record: docs/decisions/DR-XXXX-...md`
   - `QA evidence: <url or docs/qa/...#anchor>`
-- When moving work to **Review** or **Done**, make sure the Evidence field includes the relevant PR/merge reference.
+- For draft/stacked review items, make the state explicit instead of using a plain `PR:` line:
+  - `Draft PR: <url>`
+  - `Blocked by: <url>` or `Ready after: <condition>`
+- When moving work to **Review** or **Done**, make sure the Evidence field includes the relevant PR/merge reference. Switch `Draft PR:` back to `PR:` once the item is actually ready for final review/merge.
+- After merge, run the short post-merge cleanup pass before leaving the item in **Done**: remove redundant PR items, confirm final status, and keep only the durable completion links.

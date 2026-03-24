@@ -55,8 +55,11 @@ For QA findings (and QA-discovered bugs), include a direct link to the relevant 
 
 ## Ops runbooks (Project #1 automation)
 
+- [Project #1 maintainer lifecycle map](./docs/ops/project-1-maintainer-lifecycle-map.md): Use as the compact navigation layer across triage, review, merge, and post-merge hygiene.
 - [Projects v2 auth runbook](./docs/ops/projects-v2-auth-runbook.md): Use when configuring or debugging GitHub Actions auth for workflows that read/update the Clay-Agency org Project #1 (GraphQL `ProjectV2`).
 - [Project #1 field conventions](./docs/ops/project-1-field-conventions.md): Use when triaging work on the Project #1 board or building automation that writes project fields (Status, Priority, Owner agent, Needs decision, Evidence).
+- [Project #1 maintainer triage guide](./docs/ops/project-1-triage-guide.md): Use during cleanup/review passes to distinguish Clay-decision blockers, dependency blockers, and merge-ready review items.
+- [Project #1 post-merge hygiene checklist](./docs/ops/project-1-post-merge-hygiene-checklist.md): Use right after merge/close to verify final Status/Evidence, remove redundant PR items, and decide whether a one-off note or durable doc update is needed.
 
 ## Markdown link check
 
@@ -65,25 +68,19 @@ CI validates **internal/relative** links in `README.md` and `docs/**` (external 
 Run locally:
 
 ```bash
-# Option A: run via npm (requires lychee installed)
-#   brew install lychee
-#   # or: cargo install lychee
-
+# Preferred: auto-detect a runnable checker.
+# - Uses local lychee when installed.
+# - Falls back to Docker when the daemon is reachable.
+# - Prints exact setup steps if neither path is available.
 npm run docs:links
 
-# Option B: Docker (no local lychee install required)
-#   Optional readiness check (daemon reachable):
-#   docker info >/dev/null
-
+# Force the Docker path (useful after starting Docker/OrbStack)
+# docker info >/dev/null
 npm run docs:links:docker
 
-# (Equivalent direct command)
-# docker run --rm -v "$(pwd)":/workdir -w /workdir \
-#   ghcr.io/lycheeverse/lychee:latest \
-#   --no-progress --offline --exclude '^https?://' --exclude '^mailto:' README.md docs
-
-# If you see "Cannot connect to the Docker daemon", start Docker/OrbStack first,
-# then rerun the command.
+# Optional: install lychee for the local path
+# brew install lychee
+# # or: cargo install lychee
 ```
 
 

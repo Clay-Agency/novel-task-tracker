@@ -5,6 +5,8 @@ This is a **GitHub-first**, low-friction checklist for Clay (org admin) to unblo
 If you need full details (copy/paste commands, troubleshooting, rotation/incident response), use the canonical runbook:
 - **Projects v2 auth runbook**: [`docs/ops/projects-v2-auth-runbook.md`](./projects-v2-auth-runbook.md)
 
+For the broader Project #1 maintainer doc set and navigation, see [`project-1-maintainer-runbook-index.md`](./project-1-maintainer-runbook-index.md).
+
 ## Operational guardrails (recommended)
 
 - **Protect `main` (required check gate)**: [`docs/ops/branch-protection.md`](./branch-protection.md)
