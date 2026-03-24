@@ -10,10 +10,11 @@ Ask these in order:
 
 1. **Is implementation complete and is the next maintainer action review/merge?**
    - **Yes** → keep/move item to **Review**.
+   - **No, the PR is still draft or intentionally stacked behind another open PR** → do **not** treat it as `Review` yet. Continue below.
 2. **Is progress blocked by a Clay decision?**
    - **Yes** → move item to **Blocked** and set `Needs decision=True`.
 3. **Is progress blocked by some other dependency?**
-   - **Yes** → move item to **Blocked** and keep `Needs decision=False` unless Clay input is explicitly required.
+   - **Yes** → move item to **Blocked** and keep `Needs decision=False` unless Clay input is explicitly required. This includes green-but-draft PRs that are waiting on a prerequisite merge/rebase before final review.
 4. **Otherwise**
    - keep/move item to **In progress** (work still needed before review).
 
@@ -22,9 +23,10 @@ Ask these in order:
 | Situation | Project `Status` | `Needs decision` | Maintainer action |
 | --- | --- | --- | --- |
 | Implementation complete; waiting on review/merge | `Review` | `False` | Make sure `Evidence` links the active PR/CI and request final review. |
+| Draft PR waiting on another PR / stack dependency before final review | `Blocked` | `False` | Keep it out of the active `Review` queue. In `Evidence`, use `Draft PR: <url>` and `Blocked by: <url>` (or `Ready after: <condition>`). |
 | Blocked on explicit Clay decision (policy, direction, trade-off) | `Blocked` | `True` | Add/remove the repo `needs-decision` label as needed, state the decision question + options in the issue, and link the decision brief/evidence. |
 | Blocked on external dependency but **not** a Clay decision (access, upstream fix, reviewer identity constraint, waiting on another repo/system) | `Blocked` | `False` | Record the dependency clearly in the issue and `Evidence`, plus the next trigger/checkpoint. |
-| Work is still being implemented or revised before review | `In progress` | `False` (usually) | Leave with current owner and continue execution work. |
+| Work is still being implemented or revised before review | `In progress` | `False` (usually) | Leave with current owner and continue execution work. Draft PRs that are still changing belong here if they are not dependency-blocked. |
 
 ## How to classify common Project #1 cases
 
@@ -63,7 +65,19 @@ Maintainer checklist:
 - In the issue, write the blocker in one sentence and state what event unblocks it.
 - Put the concrete evidence link in the Project `Evidence` field.
 
-## 3) Merge-ready review item
+## 3) Draft or stacked PR that is not review-ready yet
+Use this when a PR exists, but it is still **draft** or intentionally stacked behind another open PR, so the next maintainer action is **not** final review/merge yet.
+
+Maintainer checklist:
+- If the PR is waiting on a prerequisite merge/rebase, set Project `Status` to **Blocked**.
+- Keep Project `Needs decision` at **False** unless the stack order itself needs a Clay decision.
+- Keep the **issue item** as the canonical Project record when it already tracks the draft PR.
+- In Project `Evidence`, make the state obvious at a glance:
+  - `Draft PR: <url>`
+  - `Blocked by: <url>` or `Ready after: <condition>`
+- Move the item to **Review** only when the PR is ready for final review/merge (for example, draft removed and prerequisite merged).
+
+## 4) Merge-ready review item
 Use this when implementation is done and the next meaningful step is review/merge rather than more execution.
 
 Maintainer checklist:

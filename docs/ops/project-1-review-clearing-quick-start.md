@@ -9,6 +9,7 @@ It is intentionally brief: use it as the session checklist, then open the linked
 - Open **Project #1** and review the **issue item first**.
 - Confirm the item still matches the issue-first convention:
   - `Status=Review`
+  - if the PR is still draft/stacked, stop and move it out of `Review` before continuing
   - `Owner agent` is still accurate (if used)
   - `Needs decision=False` unless Clay input is required
   - `Evidence` includes the active PR link
@@ -26,7 +27,7 @@ It is intentionally brief: use it as the session checklist, then open the linked
 
 ### 4) Confirm merge order before pressing merge
 - If multiple review items are related, merge the **prerequisite/base item first**.
-- If the queue includes duplicate PR items, stacked follow-up PRs, or unclear dependencies, stop and use the deeper guide instead of guessing.
+- If the queue includes duplicate PR items, stacked follow-up PRs, or unclear dependencies, stop and use the deeper guide instead of guessing. Draft/stacked PRs are not merge-ready review items yet.
 - Current detailed references:
   - Duplicate PR-item cleanup: [PR #261 / Issue #260](https://github.com/Clay-Agency/novel-task-tracker/pull/261)
   - Stacked follow-up PR handling: [PR #265 / Issue #264](https://github.com/Clay-Agency/novel-task-tracker/pull/265)

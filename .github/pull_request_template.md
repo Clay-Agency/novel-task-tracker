@@ -12,6 +12,11 @@
 ### Stage 2 — Final review (Boe)
 - [ ] Final review requested from **Boe**.
 
+## Draft / stack context (only if applicable)
+- [ ] N/A
+- Draft PR:
+- Blocked by / ready after:
+
 ## Validation evidence
 ### Lint
 ```bash
