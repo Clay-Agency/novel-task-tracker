@@ -24,6 +24,8 @@ if (!existsSync(packageJsonPath)) {
 const pkg = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
 const nvmrcExists = existsSync(nvmrcPath);
 const nvmrcVersion = nvmrcExists ? readFileSync(nvmrcPath, 'utf8').trim() : null;
+const expectedNodeMajor = nvmrcVersion ? Number.parseInt(nvmrcVersion, 10) : null;
+const currentNodeMajor = Number.parseInt(process.versions.node.split('.')[0], 10);
 const npmProbe = spawnSync('npm', ['--version'], { cwd, stdio: 'pipe' });
 const npmAvailable = npmProbe.status === 0;
 const npmVersion = npmAvailable ? npmProbe.stdout.toString().trim() : null;
@@ -33,7 +35,8 @@ addCheck(nvmrcExists, 'Node version file', nvmrcExists ? `.nvmrc present (${nvmr
 addCheck(existsSync(packageLockPath), 'Lockfile', existsSync(packageLockPath) ? 'package-lock.json present' : 'package-lock.json missing', 'Restore `package-lock.json` before install/verify commands.');
 addCheck(npmAvailable, 'npm available', npmAvailable ? `npm ${npmVersion}` : 'npm command not found', 'Install Node.js/npm or reactivate your shell environment before local verify commands.');
 addCheck(existsSync(nodeModulesPath), 'Dependencies installed', existsSync(nodeModulesPath) ? 'node_modules directory present' : 'node_modules directory missing', 'Run `npm install` before lint/test/build commands.');
-addCheck(true, 'Node.js runtime', process.version);
+addCheck(true, 'Expected Node major', expectedNodeMajor ? String(expectedNodeMajor) : 'unknown');
+addCheck(true, 'Node.js runtime', `${process.version} (major ${currentNodeMajor})`);
 addCheck(true, 'Package name', pkg.name ?? '(missing)');
 
 const failures = checks.filter((check) => !check.ok);
