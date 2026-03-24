@@ -49,6 +49,9 @@ npm run lint
 npm run typecheck
 npm run test
 npm run e2e
+npm run docs:links
+npm run verify:quick
+npm run verify:core
 ```
 
 ## Build

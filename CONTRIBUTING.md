@@ -68,25 +68,19 @@ CI validates **internal/relative** links in `README.md` and `docs/**` (external 
 Run locally:
 
 ```bash
-# Option A: run via npm (requires lychee installed)
-#   brew install lychee
-#   # or: cargo install lychee
-
+# Preferred: auto-detect a runnable checker.
+# - Uses local lychee when installed.
+# - Falls back to Docker when the daemon is reachable.
+# - Prints exact setup steps if neither path is available.
 npm run docs:links
 
-# Option B: Docker (no local lychee install required)
-#   Optional readiness check (daemon reachable):
-#   docker info >/dev/null
-
+# Force the Docker path (useful after starting Docker/OrbStack)
+# docker info >/dev/null
 npm run docs:links:docker
 
-# (Equivalent direct command)
-# docker run --rm -v "$(pwd)":/workdir -w /workdir \
-#   ghcr.io/lycheeverse/lychee:latest \
-#   --no-progress --offline --exclude '^https?://' --exclude '^mailto:' README.md docs
-
-# If you see "Cannot connect to the Docker daemon", start Docker/OrbStack first,
-# then rerun the command.
+# Optional: install lychee for the local path
+# brew install lychee
+# # or: cargo install lychee
 ```
 
 
