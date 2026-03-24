@@ -12,6 +12,14 @@ nvm use
 
 (`.nvmrc` is set to `20`.)
 
+Before deeper verification, you can run a quick local preflight:
+
+```bash
+npm run doctor:local
+```
+
+This catches common setup mismatches early (repo root, `.nvmrc`, `npm`, lockfile, and install state).
+
 ## Branch + PR flow
 
 1. Branch from `main` with `feat/issue-<number>-<summary>`.

@@ -30,8 +30,13 @@ Checklist: [`docs/ops/open-decisions.md`](./docs/ops/open-decisions.md)
 
 ## Setup
 ```bash
+nvm use
+npm run doctor:local
 npm install
 ```
+
+Use `npm run doctor:local` as a lightweight preflight for local setup assumptions before spending time on lint/test/build failures.
+It checks the repo root, `.nvmrc`, the repo's expected Node major, current runtime details, `npm` availability, lockfile presence, and whether dependencies are already installed.
 
 ## Run locally
 ```bash
