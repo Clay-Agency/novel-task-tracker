@@ -61,6 +61,7 @@ npm run build
 ### Quick links
 - Projects v2 auth runbook: [`docs/ops/projects-v2-auth-runbook.md`](./docs/ops/projects-v2-auth-runbook.md)
 - Project #1 field conventions: [`docs/ops/project-1-field-conventions.md`](./docs/ops/project-1-field-conventions.md)
+- Draft stacked review items: [`docs/ops/project-1-draft-stacked-review-items.md`](./docs/ops/project-1-draft-stacked-review-items.md)
 - Clay admin quickstart: [`docs/ops/clay-admin-quickstart.md`](./docs/ops/clay-admin-quickstart.md)
 - Branch protection runbook (require **Verify (core)** on `main`): [`docs/ops/branch-protection.md`](./docs/ops/branch-protection.md)
 
