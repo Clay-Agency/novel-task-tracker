@@ -51,6 +51,22 @@ npm run test
 npm run e2e
 ```
 
+Recommended combined gates:
+```bash
+npm run verify:quick  # workflows + lint + typecheck + unit/integration tests
+npm run verify:core   # verify:quick + production build
+```
+
+Documentation-only link validation:
+```bash
+npm run docs:links
+```
+
+If `lychee` is not installed locally, use the containerized fallback:
+```bash
+npm run docs:links:docker
+```
+
 ## Build
 ```bash
 npm run build
