@@ -51,6 +51,22 @@ npm run test
 npm run e2e
 ```
 
+Recommended combined gates:
+```bash
+npm run verify:quick  # workflows + lint + typecheck + unit/integration tests
+npm run verify:core   # verify:quick + production build
+```
+
+Documentation-only link validation:
+```bash
+npm run docs:links
+```
+
+If `lychee` is not installed locally, use the containerized fallback:
+```bash
+npm run docs:links:docker
+```
+
 ## Build
 ```bash
 npm run build
@@ -61,6 +77,7 @@ npm run build
 ### Quick links
 - Projects v2 auth runbook: [`docs/ops/projects-v2-auth-runbook.md`](./docs/ops/projects-v2-auth-runbook.md)
 - Project #1 field conventions: [`docs/ops/project-1-field-conventions.md`](./docs/ops/project-1-field-conventions.md)
+- Draft stacked review items: [`docs/ops/project-1-draft-stacked-review-items.md`](./docs/ops/project-1-draft-stacked-review-items.md)
 - Clay admin quickstart: [`docs/ops/clay-admin-quickstart.md`](./docs/ops/clay-admin-quickstart.md)
 - Branch protection runbook (require **Verify (core)** on `main`): [`docs/ops/branch-protection.md`](./docs/ops/branch-protection.md)
 

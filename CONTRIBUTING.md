@@ -32,7 +32,7 @@ When you add an issue/PR to the **Clay-Agency org Project #1** board, keep these
 
 - **Owner agent**: the agent accountable for the next step. Set when work starts; clear if unowned.
 - **Needs decision**: set `True` (and apply label `needs-decision`) only when progress is blocked on an explicit Clay decision. Put the decision question + options in the issue.
-- **Evidence**: paste the key links that justify the current state (PR, CI run, screenshots/GIFs, decision record). Keep it short; one item per line.
+- **Evidence**: paste the key links that justify the current state (PR, CI run, screenshots/GIFs, decision record). Keep it short; one item per line. For draft stacked PRs, make that explicit with lines like `PR (draft): ...`, `Depends on: ...`, and `Ready after: ...`.
 
 Details: [`docs/ops/project-1-field-conventions.md`](./docs/ops/project-1-field-conventions.md)
 
@@ -57,6 +57,7 @@ For QA findings (and QA-discovered bugs), include a direct link to the relevant 
 
 - [Projects v2 auth runbook](./docs/ops/projects-v2-auth-runbook.md): Use when configuring or debugging GitHub Actions auth for workflows that read/update the Clay-Agency org Project #1 (GraphQL `ProjectV2`).
 - [Project #1 field conventions](./docs/ops/project-1-field-conventions.md): Use when triaging work on the Project #1 board or building automation that writes project fields (Status, Priority, Owner agent, Needs decision, Evidence).
+- [Draft stacked review items](./docs/ops/project-1-draft-stacked-review-items.md): Use when a Project #1 item has a draft/stacked PR that is green but intentionally not ready for the active review queue.
 
 ## Markdown link check
 
