@@ -37,7 +37,18 @@ function contentNodeIdFromContext({ context }) {
   return null;
 }
 
-async function getProjectItemForContent({ graphql, projectNumber, contentNodeId }) {
+function projectOwnerLogin(project) {
+  return project?.owner?.login || null;
+}
+
+function projectMatchesTarget({ project, projectNumber, projectOwner }) {
+  return (
+    project?.number === projectNumber &&
+    normalize(projectOwnerLogin(project)) === normalize(projectOwner)
+  );
+}
+
+async function getProjectItemForContent({ graphql, projectNumber, projectOwner, contentNodeId, core }) {
   const query = `
     query($id: ID!) {
       node(id: $id) {
@@ -45,13 +56,13 @@ async function getProjectItemForContent({ graphql, projectNumber, contentNodeId 
         ... on Issue {
           url
           projectItems(first: 50) {
-            nodes { id project { id number } }
+            nodes { id project { id number owner { ... on Organization { login } ... on User { login } } } }
           }
         }
         ... on PullRequest {
           url
           projectItems(first: 50) {
-            nodes { id project { id number } }
+            nodes { id project { id number owner { ... on Organization { login } ... on User { login } } } }
           }
         }
       }
@@ -63,7 +74,14 @@ async function getProjectItemForContent({ graphql, projectNumber, contentNodeId 
   if (!node) return null;
 
   const items = node?.projectItems?.nodes || [];
-  const item = items.find((it) => it?.project?.number === projectNumber);
+  const item = items.find((it) => projectMatchesTarget({ project: it?.project, projectNumber, projectOwner }));
+  const wrongOwnerItem = items.find((it) => it?.project?.number === projectNumber && !projectMatchesTarget({ project: it?.project, projectNumber, projectOwner }));
+  if (!item && wrongOwnerItem && core?.warning) {
+    core.warning(
+      `Found Project #${projectNumber} item owned by '${projectOwnerLogin(wrongOwnerItem.project) || 'unknown'}'; ` +
+        `expected owner '${projectOwner}'. Skipping delete for safety.`
+    );
+  }
 
   return {
     content: node,
@@ -85,9 +103,9 @@ async function deleteProjectItem({ graphql, projectId, itemId }) {
   return res?.deleteProjectV2Item?.deletedItemId || null;
 }
 
-async function cleanupOne({ graphql, core, projectNumber, contentNodeId, projectIdHint, retryAttempts, retryDelayMs }) {
+async function cleanupOne({ graphql, core, projectNumber, projectOwner, contentNodeId, projectIdHint, retryAttempts, retryDelayMs }) {
   for (let attempt = 1; attempt <= retryAttempts; attempt += 1) {
-    const itemRes = await getProjectItemForContent({ graphql, projectNumber, contentNodeId });
+    const itemRes = await getProjectItemForContent({ graphql, projectNumber, projectOwner, contentNodeId, core });
     const { content, itemId, projectId } = itemRes || {};
 
     if (itemId) {
@@ -97,19 +115,19 @@ async function cleanupOne({ graphql, core, projectNumber, contentNodeId, project
       }
 
       const deleted = await deleteProjectItem({ graphql, projectId: effectiveProjectId, itemId });
-      core.info(`Removed from Project #${projectNumber}: ${content?.url || contentNodeId} (deletedItemId=${deleted || 'unknown'})`);
+      core.info(`Removed from ${projectOwner} Project #${projectNumber}: ${content?.url || contentNodeId} (deletedItemId=${deleted || 'unknown'})`);
       return { removed: true };
     }
 
     if (attempt < retryAttempts) {
       core.info(
-        `Not in Project #${projectNumber} yet (attempt ${attempt}/${retryAttempts}); waiting ${retryDelayMs}ms to re-check…`
+        `Not in ${projectOwner} Project #${projectNumber} yet (attempt ${attempt}/${retryAttempts}); waiting ${retryDelayMs}ms to re-check…`
       );
       await sleep(retryDelayMs);
       continue;
     }
 
-    core.info(`Content is not in Project #${projectNumber}; nothing to do.`);
+    core.info(`Content is not in ${projectOwner} Project #${projectNumber}; nothing to do.`);
     return { removed: false };
   }
 
@@ -139,14 +157,16 @@ async function searchAutomationLabeledItems({ graphql, owner, repo, label, max =
 async function cleanupAllAutomationItems({ github, context, core, env }) {
   const label = env?.AUTOMATION_LABEL || 'automation';
   const projectNumber = Number(env?.PROJECT_NUMBER || 1);
+  const projectOwner = env?.ORG_LOGIN || context.repo?.owner;
   const { owner, repo } = context.repo;
+  if (!projectOwner) throw new Error('ORG_LOGIN (project owner) is required before deleting Project items.');
 
   const retryAttempts = Number(env?.RETRY_ATTEMPTS || DEFAULT_RETRY_ATTEMPTS);
   const retryDelayMs = Number(env?.RETRY_DELAY_MS || DEFAULT_RETRY_DELAY_MS);
 
   const graphql = github.graphql;
 
-  core.info(`Searching for items labeled '${label}' to remove from Project #${projectNumber}…`);
+  core.info(`Searching for items labeled '${label}' to remove from ${projectOwner} Project #${projectNumber}…`);
   const nodes = await searchAutomationLabeledItems({ graphql, owner, repo, label, max: 50 });
   core.info(`Found ${nodes.length} item(s) labeled '${label}'.`);
 
@@ -156,6 +176,7 @@ async function cleanupAllAutomationItems({ github, context, core, env }) {
       graphql,
       core,
       projectNumber,
+      projectOwner,
       contentNodeId: node.id,
       projectIdHint: null,
       retryAttempts,
@@ -170,6 +191,8 @@ async function cleanupAllAutomationItems({ github, context, core, env }) {
 async function run({ github, context, core, env }) {
   const automationLabel = env?.AUTOMATION_LABEL || 'automation';
   const projectNumber = Number(env?.PROJECT_NUMBER || 1);
+  const projectOwner = env?.ORG_LOGIN || context.repo?.owner;
+  if (!projectOwner) throw new Error('ORG_LOGIN (project owner) is required before deleting Project items.');
 
   const retryAttempts = Number(env?.RETRY_ATTEMPTS || DEFAULT_RETRY_ATTEMPTS);
   const retryDelayMs = Number(env?.RETRY_DELAY_MS || DEFAULT_RETRY_DELAY_MS);
@@ -197,12 +220,13 @@ async function run({ github, context, core, env }) {
 
   const graphql = github.graphql;
 
-  core.info(`Detected '${automationLabel}' label; ensuring item is not in Project #${projectNumber}…`);
+  core.info(`Detected '${automationLabel}' label; ensuring item is not in ${projectOwner} Project #${projectNumber}…`);
 
   await cleanupOne({
     graphql,
     core,
     projectNumber,
+    projectOwner,
     contentNodeId,
     projectIdHint: null,
     retryAttempts,
@@ -212,4 +236,6 @@ async function run({ github, context, core, env }) {
 
 module.exports = {
   run,
+  getProjectItemForContent,
+  projectMatchesTarget,
 };
