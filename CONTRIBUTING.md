@@ -58,47 +58,34 @@ For QA findings (and QA-discovered bugs), include a direct link to the relevant 
 - [Projects v2 auth runbook](./docs/ops/projects-v2-auth-runbook.md): Use when configuring or debugging GitHub Actions auth for workflows that read/update the Clay-Agency org Project #1 (GraphQL `ProjectV2`).
 - [Project #1 field conventions](./docs/ops/project-1-field-conventions.md): Use when triaging work on the Project #1 board or building automation that writes project fields (Status, Priority, Owner agent, Needs decision, Evidence).
 
-## Markdown link check
+## Canonical docs-only validation path
 
-CI validates **internal/relative** links in `README.md` and `docs/**` (external URLs are intentionally skipped to avoid flaky failures).
+Use [`docs/ops/docs-validation.md`](./docs/ops/docs-validation.md) as the canonical reference for:
 
-Run locally:
+- when docs-link validation is required
+- which command is required vs fallback-only
+- local `lychee` vs Docker fallback steps
+- what to note in the PR when only CI can cover the check
+
+Do not duplicate or reword that guidance in issues, PRs, or follow-up docs updates; link back to the reference instead.
+
+## Canonical local verification commands
+
+Use the commands below as the canonical local validation entry points for this repo. Reference these exact commands in issues/PRs instead of inventing aliases such as `npm run verify:docs`.
 
 ```bash
-# Option A: run via npm (requires lychee installed)
-#   brew install lychee
-#   # or: cargo install lychee
-
+# Docs-only validation for README.md + docs/** + PR template internal links
+# See docs/ops/docs-validation.md for required-vs-fallback guidance.
 npm run docs:links
-
-# Option B: Docker (no local lychee install required)
-#   Optional readiness check (daemon reachable):
-#   docker info >/dev/null
-
+# or, if local lychee is unavailable:
 npm run docs:links:docker
 
-# (Equivalent direct command)
-# docker run --rm -v "$(pwd)":/workdir -w /workdir \
-#   ghcr.io/lycheeverse/lychee:latest \
-#   --no-progress --offline --exclude '^https?://' --exclude '^mailto:' README.md docs
-
-# If you see "Cannot connect to the Docker daemon", start Docker/OrbStack first,
-# then rerun the command.
-```
-
-
-## Local verification commands
-
-Use the quick check during development, and full check before final review:
-
-```bash
 # Fast inner-loop verification (no build)
 npm run verify:quick
 
 # Full pre-merge verification (includes build)
 npm run verify:core
 ```
-
 
 ## 2-stage review process (required)
 
@@ -122,6 +109,7 @@ After Stage 1 is complete, request final review from **Boe**.
 - [ ] Linked issue(s) included (`Closes #...`)
 - [ ] Stage 1 self-review complete (xhigh reasoning applied)
 - [ ] `npm run verify:core` result attached
+- [ ] Docs-only validation evidence attached when README.md, `docs/**`, or docs-facing templates changed (`npm run docs:links` or `npm run docs:links:docker`; otherwise explain why CI covered it)
 - [ ] (optional) individual command outputs attached when needed (`check:workflows`, `lint`, `typecheck`, `test`, `build`)
 - [ ] UI change evidence attached (screenshots/GIF), or marked N/A
 - [ ] Risks/edge cases documented

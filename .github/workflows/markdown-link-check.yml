@@ -17,7 +17,7 @@ jobs:
 
       # We only validate internal/relative links to keep this workflow fast and non-flaky.
       # External URLs are intentionally skipped.
-      - name: Check internal Markdown links (README.md + docs/**)
+      - name: Check internal Markdown links (README.md + docs/** + PR template)
         uses: lycheeverse/lychee-action@v2
         with:
           fail: true
@@ -26,4 +26,4 @@ jobs:
             --offline
             --exclude '^https?://'
             --exclude '^mailto:'
-            README.md docs
+            README.md docs .github/pull_request_template.md

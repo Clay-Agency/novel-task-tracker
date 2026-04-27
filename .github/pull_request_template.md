@@ -13,21 +13,32 @@
 - [ ] Final review requested from **Boe**.
 
 ## Validation evidence
-### Lint
+### Required pre-merge verification
 ```bash
 # paste command + output
+npm run verify:core
+```
+
+### Docs-only validation (required when README.md, docs/**, or docs-facing templates change)
+See [`docs/ops/docs-validation.md`](../docs/ops/docs-validation.md) for the canonical required-vs-fallback path.
+
+```bash
+# paste command + output
+npm run docs:links
+
+# or, if local lychee is unavailable:
+npm run docs:links:docker
+
+# if neither local lychee nor Docker is available, explain that here
+# and note that the required CI workflow "Markdown link check" is expected to catch docs-link regressions.
+```
+
+### Optional targeted command outputs
+```bash
+# paste command + output when useful
 npm run lint
-```
-
-### Tests
-```bash
-# paste command + output
+npm run typecheck
 npm test
-```
-
-### Build
-```bash
-# paste command + output
 npm run build
 ```
 
