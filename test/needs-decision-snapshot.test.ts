@@ -40,6 +40,10 @@ describe('needs-decision snapshot script', () => {
       const method = (init?.method || 'GET').toUpperCase();
       calls.push({ url: u.toString(), init });
 
+      if (path === '/repos/Clay-Agency/novel-task-tracker/issues' && method === 'GET') {
+        return okJson([]);
+      }
+
       if (path === '/search/issues' && method === 'GET') {
         const q = u.searchParams.get('q') || '';
         // First query: open items labeled needs-decision
@@ -110,6 +114,10 @@ describe('needs-decision snapshot script', () => {
       const method = (init?.method || 'GET').toUpperCase();
       calls.push({ url: u.toString(), init });
 
+      if (path === '/repos/Clay-Agency/novel-task-tracker/issues' && method === 'GET') {
+        return okJson([]);
+      }
+
       if (path === '/search/issues' && method === 'GET') {
         const q = u.searchParams.get('q') || '';
         // First query: open items labeled needs-decision
@@ -179,6 +187,10 @@ describe('needs-decision snapshot script', () => {
       const path = u.pathname;
       const method = (init?.method || 'GET').toUpperCase();
       calls.push({ url: u.toString(), init });
+
+      if (path === '/repos/Clay-Agency/novel-task-tracker/issues' && method === 'GET') {
+        return okJson([]);
+      }
 
       if (path === '/search/issues' && method === 'GET') {
         const q = u.searchParams.get('q') || '';
@@ -264,6 +276,83 @@ describe('needs-decision snapshot script', () => {
 
     const commentCalls = calls.filter((c) => c.url.includes('/issues/60/comments'));
     expect(commentCalls.length).toBe(1);
+  });
+
+
+  it('builds snapshot items from unfiltered open issues client-side filtered by needs-decision and sorted by updated_at', async () => {
+    const calls: Array<{ url: string; init?: RequestInit }> = [];
+    let patchedBody = '';
+
+    globalThis.fetch = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+      const u = new URL(String(url));
+      const path = u.pathname;
+      const method = (init?.method || 'GET').toUpperCase();
+      calls.push({ url: u.toString(), init });
+
+      if (path === '/repos/Clay-Agency/novel-task-tracker/issues' && method === 'GET') {
+        expect(u.searchParams.get('state')).toBe('open');
+        expect(u.searchParams.has('labels')).toBe(false);
+        return okJson([
+          {
+            number: 10,
+            title: 'older decision',
+            html_url: 'https://github.com/Clay-Agency/novel-task-tracker/issues/10',
+            user: { login: 'alice' },
+            updated_at: '2026-04-01T00:00:00Z',
+            labels: [{ name: 'needs-decision' }],
+          },
+          {
+            number: 11,
+            title: 'not a decision',
+            html_url: 'https://github.com/Clay-Agency/novel-task-tracker/issues/11',
+            user: { login: 'bob' },
+            updated_at: '2026-04-03T00:00:00Z',
+            labels: [{ name: 'bug' }],
+          },
+          {
+            number: 12,
+            title: 'newer decision PR',
+            html_url: 'https://github.com/Clay-Agency/novel-task-tracker/pull/12',
+            user: { login: 'carol' },
+            updated_at: '2026-04-04T00:00:00Z',
+            labels: [{ name: 'needs-decision' }],
+            pull_request: {},
+          },
+        ]);
+      }
+
+      if (path === '/search/issues' && method === 'GET') {
+        const q = u.searchParams.get('q') || '';
+        expect(q).not.toContain('label:"needs-decision"');
+        if (q.includes('in:title') && q.includes('Needs-decision snapshot (automated)')) {
+          return okJson({ total_count: 1, incomplete_results: false, items: [{ number: 50, title: 'Needs-decision snapshot (automated)', html_url: 'https://github.com/Clay-Agency/novel-task-tracker/issues/50' }] });
+        }
+        throw new Error(`Unexpected search query: ${q}`);
+      }
+
+      if (path === '/repos/Clay-Agency/novel-task-tracker/issues/50' && method === 'GET') {
+        return okJson({ number: 50, title: 'Needs-decision snapshot (automated)', state: 'open', html_url: 'https://github.com/Clay-Agency/novel-task-tracker/issues/50', body: 'x' });
+      }
+
+      if (path === '/repos/Clay-Agency/novel-task-tracker/issues/50' && method === 'PATCH') {
+        patchedBody = String(JSON.parse(String(init?.body || '{}')).body || '');
+        return okJson({ number: 50, title: 'Needs-decision snapshot (automated)', state: 'open', html_url: 'https://github.com/Clay-Agency/novel-task-tracker/issues/50', body: patchedBody });
+      }
+
+      if (path === '/repos/Clay-Agency/novel-task-tracker/issues/50/labels' && method === 'POST') {
+        return okJson([{ name: 'automation' }]);
+      }
+
+      throw new Error(`Unexpected fetch: ${method} ${path}`);
+    }) as unknown as typeof fetch;
+
+    await main();
+
+    expect(patchedBody).toContain('Open items labeled `needs-decision`: **2** (PRs: **1**, issues: **1**)');
+    expect(patchedBody).toContain('newer decision PR');
+    expect(patchedBody).toContain('older decision');
+    expect(patchedBody).not.toContain('not a decision');
+    expect(calls.some((c) => new URL(c.url).pathname === '/search/issues' && (new URL(c.url).searchParams.get('q') || '').includes('label:"needs-decision"'))).toBe(false);
   });
 
 });

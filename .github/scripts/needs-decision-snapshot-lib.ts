@@ -6,6 +6,7 @@ export type GitHubSearchItem = {
   updated_at?: string;
   created_at?: string;
   pull_request?: unknown;
+  labels?: Array<{ name?: string } | string>;
 };
 
 export const SNAPSHOT_TITLE = 'Needs-decision snapshot (automated)';
