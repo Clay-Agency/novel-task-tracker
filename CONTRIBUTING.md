@@ -74,7 +74,7 @@ Do not duplicate or reword that guidance in issues, PRs, or follow-up docs updat
 Use the commands below as the canonical local validation entry points for this repo. Reference these exact commands in issues/PRs instead of inventing aliases such as `npm run verify:docs`.
 
 ```bash
-# Docs-only validation for README.md + docs/** internal links
+# Docs-only validation for README.md + docs/** + PR template internal links
 # See docs/ops/docs-validation.md for required-vs-fallback guidance.
 npm run docs:links
 # or, if local lychee is unavailable:

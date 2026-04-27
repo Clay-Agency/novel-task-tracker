@@ -20,7 +20,7 @@ npm run verify:core
 ```
 
 ### Docs-only validation (required when README.md, docs/**, or docs-facing templates change)
-See [`docs/ops/docs-validation.md`](./docs/ops/docs-validation.md) for the canonical required-vs-fallback path.
+See [`docs/ops/docs-validation.md`](../docs/ops/docs-validation.md) for the canonical required-vs-fallback path.
 
 ```bash
 # paste command + output

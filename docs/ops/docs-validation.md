@@ -36,11 +36,11 @@ npm run docs:links:docker
 # Equivalent direct Docker command
 # docker run --rm -v "$PWD":/workdir -w /workdir \
 #   ghcr.io/lycheeverse/lychee:latest \
-#   --no-progress --offline --exclude '^https?://' --exclude '^mailto:' README.md docs
+#   --no-progress --offline --exclude '^https?://' --exclude '^mailto:' README.md docs .github/pull_request_template.md
 ```
 
 If Docker reports `Cannot connect to the Docker daemon`, start Docker/OrbStack first and rerun `npm run docs:links:docker`.
 
 ## Scope of the check
 
-CI validates **internal/relative** links in `README.md` and `docs/**`. External URLs are intentionally skipped to avoid flaky failures.
+CI validates **internal/relative** links in `README.md`, `docs/**`, and `.github/pull_request_template.md`. External URLs are intentionally skipped to avoid flaky failures.
