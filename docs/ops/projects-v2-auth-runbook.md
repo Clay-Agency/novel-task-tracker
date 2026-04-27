@@ -192,6 +192,7 @@ gh run list -R "$REPO" --limit 5
 | `actions/create-github-app-token` fails | App not installed on org/repo, or permissions not approved after changes | Install App on Clay-Agency + `novel-task-tracker`; re-approve permissions in installation settings. |
 | GraphQL: `Resource not accessible by integration` | Missing **Org → Projects: Read & write** | Update App permissions, then re-approve installation permissions. |
 | Project not found / can’t resolve `projectV2` | Wrong org login/project number, or token can’t access org project | Confirm workflow env (`ORG_LOGIN`, `PROJECT_NUMBER`) and ensure App is installed on the org. |
+| Scheduled/manual sync warns that `ProjectV2.items` returned zero items after retries | GitHub Projects v2 read inconsistency, auth visibility problem, or genuinely empty Project | Do not restore/delete items based on the zero read alone. Check issue-level `projectItems` on known tracked issues and rerun the workflow/smoke test; the sync skips reconcile to avoid treating Project #1 as empty. |
 | Some project items never update | Project includes items from repos not covered by installation | Install App on those repos or broaden installation scope. |
 | PEM-related errors | PEM pasted without headers/line breaks | Re-set `PROJECTS_APP_PRIVATE_KEY` with the raw PEM text. |
 

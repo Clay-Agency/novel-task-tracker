@@ -18,6 +18,17 @@ function yyyyMmDd(dateLike) {
   return d.toISOString().slice(0, 10);
 }
 
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function parseRetryCount(value, fallback) {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n < 0) return fallback;
+  return Math.floor(n);
+}
+
 function mapProjectFields(fieldsNodes) {
   const fields = fieldsNodes || [];
 
@@ -264,14 +275,13 @@ async function syncOneItem({ graphql, core, meta, projectId, itemId, doneDate })
   }
 }
 
-async function reconcileProject({ graphql, core, meta, orgLogin, projectNumber }) {
-  core.info(`Reconciling items in ${orgLogin} Project #${projectNumber} (${meta.projectTitle})`);
-
+async function readProjectItemsPage({ graphql, projectId, after }) {
   const query = `
     query($projectId: ID!, $after: String) {
       node(id: $projectId) {
         ... on ProjectV2 {
           items(first: 50, after: $after) {
+            totalCount
             pageInfo { hasNextPage endCursor }
             nodes {
               id
@@ -297,14 +307,133 @@ async function reconcileProject({ graphql, core, meta, orgLogin, projectNumber }
     }
   `;
 
+  return graphql(query, { projectId, after });
+}
+
+async function getRepoProjectMembershipSample({ graphql, owner, repo, projectNumber }) {
+  if (!owner || !repo) return [];
+
+  const query = `
+    query($owner: String!, $repo: String!) {
+      repository(owner: $owner, name: $repo) {
+        issues(first: 20, states: OPEN, orderBy: {field: UPDATED_AT, direction: DESC}) {
+          nodes {
+            number
+            url
+            projectItems(first: 20) {
+              nodes { project { number } }
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  const res = await graphql(query, { owner, repo });
+  const issues = res?.repository?.issues?.nodes || [];
+  return issues.filter((issue) =>
+    (issue?.projectItems?.nodes || []).some((item) => item?.project?.number === projectNumber)
+  );
+}
+
+async function getFirstProjectItemsPageWithRetry({
+  graphql,
+  core,
+  meta,
+  orgLogin,
+  projectNumber,
+  repositoryOwner,
+  repositoryName,
+  maxRetries = 2,
+  retryDelayMs = 1500,
+  sleepFn = sleep,
+}) {
+  let lastRes = null;
+  const attempts = Math.max(1, maxRetries + 1);
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    lastRes = await readProjectItemsPage({ graphql, projectId: meta.projectId, after: null });
+    const items = lastRes?.node?.items;
+    const nodes = items?.nodes || [];
+    const totalCount = Number(items?.totalCount || 0);
+
+    if (nodes.length > 0) return lastRes;
+
+    if (attempt < attempts) {
+      core.warning(
+        `ProjectV2.items returned zero item nodes (totalCount=${totalCount}) for ${orgLogin} Project #${projectNumber}; retrying (${attempt}/${maxRetries}) before treating the read as authoritative.`
+      );
+      await sleepFn(retryDelayMs);
+    }
+  }
+
+  let membershipSample = [];
+  try {
+    membershipSample = await getRepoProjectMembershipSample({
+      graphql,
+      owner: repositoryOwner,
+      repo: repositoryName,
+      projectNumber,
+    });
+  } catch (e) {
+    core.warning(`Could not run issue-level Project membership consistency check: ${e?.message || e}`);
+  }
+
+  const sampleText = membershipSample.length
+    ? ` Issue-level projectItems still show Project #${projectNumber} membership for: ${membershipSample
+        .slice(0, 5)
+        .map((issue) => `#${issue.number}`)
+        .join(', ')}.`
+    : '';
+
+  core.warning(
+    `ProjectV2.items still returned zero item nodes for ${orgLogin} Project #${projectNumber} after ${attempts} attempts; treating this as a suspect transient/consistency failure and skipping reconcile instead of assuming the project is empty.${sampleText}`
+  );
+
+  return { suspectZeroItems: true, res: lastRes, membershipSample };
+}
+
+async function reconcileProject({
+  graphql,
+  core,
+  meta,
+  orgLogin,
+  projectNumber,
+  repositoryOwner,
+  repositoryName,
+  maxZeroRetries = 2,
+  zeroRetryDelayMs = 1500,
+  sleepFn = sleep,
+}) {
+  core.info(`Reconciling items in ${orgLogin} Project #${projectNumber} (${meta.projectTitle})`);
+
+  let firstPage = await getFirstProjectItemsPageWithRetry({
+    graphql,
+    core,
+    meta,
+    orgLogin,
+    projectNumber,
+    repositoryOwner,
+    repositoryName,
+    maxRetries: maxZeroRetries,
+    retryDelayMs: zeroRetryDelayMs,
+    sleepFn,
+  });
+
+  if (firstPage?.suspectZeroItems) {
+    return { processed: 0, updated: 0, stopped: false, skipped: true, suspectZeroItems: true };
+  }
+
   let after = null;
   let processed = 0;
   let updated = 0;
 
   while (true) {
-    const res = await graphql(query, { projectId: meta.projectId, after });
-    const items = res?.node?.items?.nodes || [];
-    const pageInfo = res?.node?.items?.pageInfo;
+    const res = firstPage || (await readProjectItemsPage({ graphql, projectId: meta.projectId, after }));
+    firstPage = null;
+    const itemsConnection = res?.node?.items;
+    const items = itemsConnection?.nodes || [];
+    const pageInfo = itemsConnection?.pageInfo;
 
     for (const it of items) {
       processed += 1;
@@ -330,7 +459,7 @@ async function reconcileProject({ graphql, core, meta, orgLogin, projectNumber }
 
       if (updated >= 200) {
         core.warning('Safety stop: reached 200 updates in one run.');
-        return { processed, updated, stopped: true };
+        return { processed, updated, stopped: true, skipped: false };
       }
     }
 
@@ -340,11 +469,11 @@ async function reconcileProject({ graphql, core, meta, orgLogin, projectNumber }
     // Safety: don't scan unbounded projects
     if (processed >= 1000) {
       core.warning('Safety stop: scanned 1000 items; stopping.');
-      return { processed, updated, stopped: true };
+      return { processed, updated, stopped: true, skipped: false };
     }
   }
 
-  return { processed, updated, stopped: false };
+  return { processed, updated, stopped: false, skipped: false };
 }
 
 async function run({ github, context, core, env }) {
@@ -367,8 +496,22 @@ async function run({ github, context, core, env }) {
   }
 
   if (reconcile) {
-    const res = await reconcileProject({ graphql, core, meta, orgLogin, projectNumber });
-    core.info(`Reconcile complete. scanned=${res.processed}, updated=${res.updated}, stopped=${res.stopped}`);
+    const repositoryOwner = context.repo?.owner || String(env.GITHUB_REPOSITORY || '').split('/')[0];
+    const repositoryName = context.repo?.repo || String(env.GITHUB_REPOSITORY || '').split('/')[1];
+    const res = await reconcileProject({
+      graphql,
+      core,
+      meta,
+      orgLogin,
+      projectNumber,
+      repositoryOwner,
+      repositoryName,
+      maxZeroRetries: parseRetryCount(env.PROJECT_ITEMS_ZERO_RETRY_COUNT, 2),
+      zeroRetryDelayMs: parseRetryCount(env.PROJECT_ITEMS_ZERO_RETRY_DELAY_MS, 1500),
+    });
+    core.info(
+      `Reconcile complete. scanned=${res.processed}, updated=${res.updated}, stopped=${res.stopped}, skipped=${Boolean(res.skipped)}`
+    );
     return;
   }
 
@@ -410,6 +553,10 @@ module.exports = {
   yyyyMmDd,
   mapProjectFields,
   getProjectMetadata,
+  readProjectItemsPage,
+  getRepoProjectMembershipSample,
+  getFirstProjectItemsPageWithRetry,
+  reconcileProject,
   syncOneItem,
   run,
 };

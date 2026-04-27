@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
-const { getProjectMetadata, syncOneItem, schemaHelp } = require('../../.github/scripts/project-status-sync.cjs');
+const { getProjectMetadata, getFirstProjectItemsPageWithRetry, reconcileProject, syncOneItem, schemaHelp } = require('../../.github/scripts/project-status-sync.cjs');
 
 describe('project-status-sync', () => {
   it('maps Status/Done date/Needs decision fields from project metadata (incl. Done option id)', async () => {
@@ -337,5 +337,142 @@ describe('project-status-sync', () => {
     expect(msg).toContain(schemaHelp());
     expect(msg).toContain('Maybe');
   });
+
+  it('retries and skips reconcile when ProjectV2.items repeatedly reports zero items', async () => {
+    const graphql = vi.fn(async (query: string) => {
+      if (query.includes('repository(owner:')) {
+        return {
+          repository: {
+            issues: {
+              nodes: [
+                {
+                  number: 301,
+                  url: 'https://github.com/Clay-Agency/novel-task-tracker/issues/301',
+                  projectItems: { nodes: [{ project: { number: 1 } }] },
+                },
+              ],
+            },
+          },
+        };
+      }
+
+      return {
+        node: {
+          items: {
+            totalCount: 0,
+            pageInfo: { hasNextPage: false, endCursor: null },
+            nodes: [],
+          },
+        },
+      };
+    });
+
+    const core = { info: vi.fn(), warning: vi.fn() };
+    const res = await reconcileProject({
+      graphql,
+      core,
+      meta: { projectId: 'P1', projectTitle: 'Clay Project' },
+      orgLogin: 'Clay-Agency',
+      projectNumber: 1,
+      repositoryOwner: 'Clay-Agency',
+      repositoryName: 'novel-task-tracker',
+      maxZeroRetries: 2,
+      zeroRetryDelayMs: 0,
+      sleepFn: vi.fn(async () => undefined),
+    });
+
+    expect(res).toEqual({ processed: 0, updated: 0, stopped: false, skipped: true, suspectZeroItems: true });
+    // 3 project item attempts + 1 issue-level consistency check.
+    expect(graphql).toHaveBeenCalledTimes(4);
+    expect(core.warning.mock.calls.map((call) => String(call[0])).join('\n')).toContain(
+      'treating this as a suspect transient/consistency failure and skipping reconcile'
+    );
+    expect(core.warning.mock.calls.map((call) => String(call[0])).join('\n')).toContain('#301');
+  });
+
+  it('continues reconcile when a zero ProjectV2.items read recovers on retry', async () => {
+    let projectReadCount = 0;
+    const graphql = vi.fn(async (query: string) => {
+      if (!query.includes('items(first: 50')) return {};
+      projectReadCount += 1;
+
+      if (projectReadCount === 1) {
+        return {
+          node: {
+            items: {
+              totalCount: 0,
+              pageInfo: { hasNextPage: false, endCursor: null },
+              nodes: [],
+            },
+          },
+        };
+      }
+
+      return {
+        node: {
+          items: {
+            totalCount: 1,
+            pageInfo: { hasNextPage: false, endCursor: null },
+            nodes: [
+              {
+                id: 'ITEM1',
+                content: {
+                  __typename: 'Issue',
+                  url: 'https://github.com/Clay-Agency/novel-task-tracker/issues/1',
+                  state: 'OPEN',
+                  closedAt: null,
+                },
+              },
+            ],
+          },
+        },
+      };
+    });
+
+    const core = { info: vi.fn(), warning: vi.fn() };
+    const res = await reconcileProject({
+      graphql,
+      core,
+      meta: { projectId: 'P1', projectTitle: 'Clay Project' },
+      orgLogin: 'Clay-Agency',
+      projectNumber: 1,
+      maxZeroRetries: 2,
+      zeroRetryDelayMs: 0,
+      sleepFn: vi.fn(async () => undefined),
+    });
+
+    expect(res).toEqual({ processed: 1, updated: 0, stopped: false, skipped: false });
+    expect(projectReadCount).toBe(2);
+    expect(core.warning.mock.calls.map((call) => String(call[0])).join('\n')).toContain('retrying (1/2)');
+  });
+
+  it('returns the first ProjectV2.items page immediately when item nodes are present', async () => {
+    const graphql = vi.fn(async () => ({
+      node: {
+        items: {
+          totalCount: 1,
+          pageInfo: { hasNextPage: false, endCursor: null },
+          nodes: [{ id: 'ITEM1' }],
+        },
+      },
+    }));
+    const core = { warning: vi.fn() };
+
+    const res = await getFirstProjectItemsPageWithRetry({
+      graphql,
+      core,
+      meta: { projectId: 'P1' },
+      orgLogin: 'Clay-Agency',
+      projectNumber: 1,
+      maxRetries: 2,
+      retryDelayMs: 0,
+      sleepFn: vi.fn(async () => undefined),
+    });
+
+    expect(res.suspectZeroItems).toBeUndefined();
+    expect(graphql).toHaveBeenCalledTimes(1);
+    expect(core.warning).not.toHaveBeenCalled();
+  });
+
 
 });
