@@ -69,6 +69,35 @@ async function ghFetch<T>(path: string, init?: RequestInit): Promise<T> {
   return (await res.json()) as T;
 }
 
+
+function hasLabel(item: GitHubSearchItem, label: string): boolean {
+  return (item.labels || []).some((it) => {
+    if (typeof it === 'string') return it === label;
+    return it.name === label;
+  });
+}
+
+async function listOpenItemsWithLabel(owner: string, repo: string, label: string, maxPages = 10): Promise<GitHubSearchItem[]> {
+  const perPage = 100;
+  const items: GitHubSearchItem[] = [];
+
+  for (let page = 1; page <= maxPages; page += 1) {
+    const pageItems = await ghFetch<GitHubSearchItem[]>(
+      `/repos/${owner}/${repo}/issues?state=open&per_page=${perPage}&page=${page}`
+    );
+
+    items.push(...pageItems.filter((item) => hasLabel(item, label)));
+
+    if (pageItems.length < perPage) break;
+  }
+
+  return items.sort((a, b) => {
+    const bTime = Date.parse(b.updated_at || '');
+    const aTime = Date.parse(a.updated_at || '');
+    return (Number.isNaN(bTime) ? 0 : bTime) - (Number.isNaN(aTime) ? 0 : aTime);
+  });
+}
+
 async function searchAllIssues(query: string, maxPages = 10): Promise<GitHubSearchItem[]> {
   const perPage = 100;
   const items: GitHubSearchItem[] = [];
@@ -238,8 +267,7 @@ export async function main(): Promise<void> {
       ? `${process.env.GITHUB_SERVER_URL}/${repoFull}/actions/runs/${process.env.GITHUB_RUN_ID}`
       : undefined;
 
-  const q = `repo:${repoFull} is:open label:"${LABEL}" sort:updated-desc`;
-  const all = await searchAllIssues(q, 10);
+  const all = await listOpenItemsWithLabel(owner, repo, LABEL, 10);
   const { prs, issues } = splitPrsAndIssues(all);
 
   const body = buildBody({ repoFull, runUrl, generatedAt: new Date(), prs, issues });
