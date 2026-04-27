@@ -43,3 +43,16 @@ Recommended scopes:
 - If no App/PAT token is configured, the workflow fails early with an actionable error.
 - If the closed issue/PR is **not** in org Project #1, the workflow exits successfully (no-op).
 - If the workflow can’t read the project metadata (permissions, renamed fields, etc.), it logs an info message and exits successfully.
+- If scheduled/manual reconciliation sees `ProjectV2.items` return zero items, it treats the read as suspect: retries, checks recent repo issues via issue-level `projectItems`, then skips reconciliation with a warning instead of assuming Project #1 is empty.
+
+## Project item read consistency guard
+
+Issue #301 captured transient GitHub Projects v2 reads where `ProjectV2.items` reported `0` items while issue-level `projectItems` still showed Project #1 membership. The reconciliation path now guards against that case:
+
+1. retry the first zero-item Project read (`PROJECT_ITEMS_ZERO_RETRY_COUNT`, default `2`);
+2. run a read-only issue-level membership sample against recent open issues in the repo;
+3. skip the reconcile run if Project items still read as zero, leaving existing Project fields untouched.
+
+Optional tuning:
+- `PROJECT_ITEMS_ZERO_RETRY_COUNT`: number of retries after the first zero read (default `2`).
+- `PROJECT_ITEMS_ZERO_RETRY_DELAY_MS`: delay between retries (default `1500`).
